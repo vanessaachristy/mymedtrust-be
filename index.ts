@@ -1,7 +1,8 @@
 import express, { Express, Request, Response, Application } from 'express';
 import dotenv from 'dotenv';
 import MainContract from "./MainContract.json"
-import web3, { eth } from "web3";
+import web3, { errors, eth } from "web3";
+import { RecordStatus } from './type';
 
 
 //For env File 
@@ -300,21 +301,29 @@ app.post("/whitelist", async function (req: Request, res: Response) {
 
     try {
 
-        await contract.methods.addWhitelistedDoctor(doctorAddress, patientAddress).send({ from: senderAccount, gas: "6721975" }).then(async (response) => {
-            console.log(response);
-            const event = await contract.getPastEvents("WhitelistDoctor", { fromBlock: 0, toBlock: "latest" });
-            const whitelistData = event[event.length - 1].returnValues;
-            console.log(Number(whitelistData.timestamp));
+        const patient = await contract.methods.getPatientDetails(patientAddress).call();
+        if (!patient.whitelistedDoctor.includes(doctorAddress)) {
+            await contract.methods.addWhitelistedDoctor(doctorAddress, patientAddress).send({ from: senderAccount, gas: "6721975" }).then(async (response) => {
+                console.log(response);
+                const event = await contract.getPastEvents("WhitelistDoctor", { fromBlock: 0, toBlock: "latest" });
+                const whitelistData = event[event.length - 1].returnValues;
+                console.log(Number(whitelistData.timestamp));
 
-            res.status(200).send({
-                message: "success",
-                data: {
-                    patient: whitelistData.patientAddr.toString(),
-                    doctor: whitelistData.doctorAddr.toString(),
-                    timestamp: new Date(Number(whitelistData.timestamp) * 1000).toString()
-                }
+                res.status(200).send({
+                    message: "success",
+                    data: {
+                        patient: whitelistData.patientAddr.toString(),
+                        doctor: whitelistData.doctorAddr.toString(),
+                        timestamp: new Date(Number(whitelistData.timestamp) * 1000).toString()
+                    }
+                })
             })
-        })
+        } else {
+            res.status(200).json({
+                message: "success",
+                data: "Doctor has already been whitelisted"
+            })
+        }
     }
     catch (err) {
         console.trace(err);
@@ -360,6 +369,47 @@ app.post("/whitelist/remove", async function (req: Request, res: Response) {
 })
 
 /**
+ * Get patient record details
+ */
+app.get("/patient/record/:address", async function (req: Request, res: Response) {
+    const patientAddress = req.params['address'];
+
+    try {
+        const patient = await contract.methods.getPatientDetails(patientAddress).call();
+        const patientExist = patient.primaryInfo.addr !== '0x0000000000000000000000000000000000000000';
+
+        if (patientExist) {
+            const recordList = patient.recordList;
+            const records = [];
+            for (let i = 0; i < recordList.length; i++) {
+                const record = await contract.methods.recordList(recordList[i]).call();
+                records.push({
+                    encryptedID: record.encryptedID,
+                    dataHash: record.dataHash,
+                    issuerDoctorAddr: record.issuerDoctorAddr,
+                    timestamp: new Date(Number(record.timestamp) * 1000).toString(),
+                    recordStatus: Number(record.recordStatus as RecordStatus)
+                });
+            }
+            res.status(200).send({
+                message: "success",
+                data: records
+            })
+        } else {
+            res.status(400).json({
+                message: "error",
+                error: "Patient does not exist"
+            })
+        }
+    } catch (err) {
+        res.status(400).json({
+            message: "error",
+            error: err.toString()
+        })
+    }
+})
+
+/**
  * Add record to patient
  */
 app.post("/record/add", async function (req: Request, res: Response) {
@@ -370,21 +420,48 @@ app.post("/record/add", async function (req: Request, res: Response) {
     const dataHash = req.body.dataHash;
 
     try {
-        await contract.methods.createRecord(encryptedID, dataHash, doctorAddress, patientAddress).send({ from: senderAccount, gas: "6721975" }).then(async (response) => {
-            console.log(response);
-            const event = await contract.getPastEvents("RecordCreated", { fromBlock: 0, toBlock: "latest" });
-            const recordData = event[event.length - 1].returnValues;
-            res.status(200).send({
-                message: "success",
-                data: {
-                    dataID: recordData.encryptedID.toString(),
-                    patient: recordData.patientAddr.toString(),
-                    doctor: recordData.issuerDoctorAddr.toString(),
-                    timestamp: new Date(Number(recordData.timestamp) * 1000).toString(),
-                    status: recordData.recordStatus.toString()
+
+        const patient = await contract.methods.getPatientDetails(patientAddress).call();
+        const patientExist = patient.primaryInfo.addr !== '0x0000000000000000000000000000000000000000'
+        if (patientExist) {
+            const recordExist = patient.recordList.includes(encryptedID);
+            if (!recordExist) {
+                const doctorIsWhitelisted = patient.whitelistedDoctor.includes(doctorAddress);
+                if (doctorIsWhitelisted) {
+                    await contract.methods.createRecord(encryptedID, dataHash, doctorAddress, patientAddress).send({ from: senderAccount, gas: "6721975" }).then(async (response) => {
+                        console.log(response);
+                        const event = await contract.getPastEvents("RecordCreated", { fromBlock: 0, toBlock: "latest" });
+                        const recordData = event[event.length - 1].returnValues;
+                        res.status(200).send({
+                            message: "success",
+                            data: {
+                                dataID: recordData.encryptedID.toString(),
+                                patient: recordData.patientAddr.toString(),
+                                doctor: recordData.issuerDoctorAddr.toString(),
+                                timestamp: new Date(Number(recordData.timestamp) * 1000).toString(),
+                                status: Number(recordData.recordStatus)
+                            }
+                        })
+                    })
+                } else {
+                    res.status(200).send({
+                        message: 'success',
+                        error: "Doctor is not whitelisted"
+                    })
                 }
+            } else {
+                res.status(200).send({
+                    message: 'success',
+                    error: "Record with same ID already exist"
+                })
+            }
+        } else {
+            res.status(200).send({
+                message: 'success',
+                error: "Patient is not exist"
             })
-        })
+        };
+
     } catch (err) {
         // let errMessage = "Invalid request";
         // if (err.errors[0].message.toString().includes('must pass "address" validation')) {
@@ -397,6 +474,50 @@ app.post("/record/add", async function (req: Request, res: Response) {
     }
 })
 
+/**
+ * Edit record
+ */
+app.post("/record/edit", async function (req: Request, res: Response) {
+    const senderAccount = req.body.account;
+    const patientAddress = req.body.patient;
+    const encryptedID = req.body.encryptedID;
+    const dataHash = req.body.dataHash;
+    const recordStatus: RecordStatus = req.body.recordStatus;
+
+    try {
+        const record = await contract.methods.recordList(encryptedID).call();
+        const recordExist = record.encryptedID === encryptedID;
+        const recordDoctorAddr = record.issuerDoctorAddr.toString();
+        console.log(record)
+        const validSender = recordDoctorAddr === senderAccount;
+        if (recordExist) {
+            if (validSender) {
+                await contract.methods.editRecord(encryptedID, dataHash, recordStatus).send({ from: senderAccount, gas: "6721975" }).then((response) => {
+                    res.status(200).send({
+                        message: "success"
+                    })
+                })
+            } else {
+                res.status(400).json({
+                    message: "error",
+                    error: "Sender must be the issuer doctor!"
+                })
+            }
+        } else {
+            res.status(400).json({
+                message: "error",
+                error: "Record does not exist."
+
+            })
+        }
+    } catch (err) {
+        res.status(400).json({
+            message: "error",
+            error: err.toString()
+        })
+    }
+
+})
 
 /**
  * Remove record
@@ -404,9 +525,7 @@ app.post("/record/add", async function (req: Request, res: Response) {
 app.post("/record/remove", async function (req: Request, res: Response) {
     const senderAccount = req.body.account;
     const patientAddress = req.body.patient;
-    const doctorAddress = req.body.doctor;
     const encryptedID = req.body.encryptedID;
-    const dataHash = req.body.dataHash;
 
     try {
         await contract.methods.removeRecord(encryptedID, patientAddress).send({ from: senderAccount, gas: "6721975" }).then(async (response) => {
