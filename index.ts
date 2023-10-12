@@ -1,9 +1,11 @@
 import express, { Express, Request, Response, Application } from 'express';
 import dotenv from 'dotenv';
-import MainContract from "./MainContract.json"
+import MainContract from "./abis/MainContract.json"
 import web3, { errors, eth } from "web3";
-import { RecordStatus } from './type';
-
+import { RecordStatus } from './types/type';
+import { MainContract as MainContractType } from './types/abis';
+import { AddressType } from 'typechain';
+import { DoctorCreatedEventObject, PatientCreatedEvent, PatientCreatedEventObject, RecordCreatedEventObject, WhitelistDoctorEventObject } from './types/abis/MainContract';
 
 //For env File 
 dotenv.config();
@@ -20,6 +22,7 @@ const port = process.env.PORT || 3000;
 const contractAbi = MainContract.abi;
 const contractAddress = MainContract.networks[5777].address;
 const contract = new web3js.eth.Contract(contractAbi, contractAddress) as any;
+const contract2 = new web3js.eth.Contract(contractAbi, contractAddress) as unknown as MainContractType;
 
 
 app.get('/', (req: Request, res: Response) => {
@@ -46,11 +49,12 @@ app.get("/accounts", async function (req: Request, res: Response) {
  */
 app.get("/patients", async function (req: Request, res: Response) {
     res.header("Access-Control-Allow-Origin", "*");
-    const totalPatients = await contract.methods.totalPatients().call();
+    console.log(contract2.functions);
+    const totalPatients = Number(await contract.methods.totalPatients().call());
     let patients = [];
     for (let i = 1; i <= Number(totalPatients); i++) {
-        let patientAddr = await contract.methods.patients(i).call();
-        let patient = await contract.methods.getPatientDetails(patientAddr).call();
+        let patientAddr = (await contract.methods.patients(i).call()) as AddressType;
+        let patient = (await contract.methods.getPatientDetails(patientAddr).call()) as MainContractType.PatientStructOutput;
         if (patientAddr.toString() !== '0x0000000000000000000000000000000000000000') {
             let patientObj = {
                 primaryInfo: {
@@ -63,14 +67,14 @@ app.get("/patients", async function (req: Request, res: Response) {
                     homeAddress: patient.primaryInfo.homeAddress.toString(),
                     phone: patient.primaryInfo.phone.toString(),
                     userSince: Number(patient.primaryInfo.userSince) !== 0 ? new Date(Number(patient.primaryInfo.userSince)).toString() : "",
-                    whitelistedDoctor: patient.whitelistedDoctor,
-                    recordList: patient.recordList
                 },
                 emergencyContact: patient.emergencyContact.toString(),
                 emergencyNumber: patient.emergencyNumber.toString(),
                 bloodType: patient.bloodType.toString(),
                 height: patient.height.toString(),
-                weight: patient.weight.toString()
+                weight: patient.weight.toString(),
+                whitelistedDoctor: patient.whitelistedDoctor,
+                recordList: patient.recordList
             }
             patients.push(patientObj);
         }
@@ -149,10 +153,9 @@ app.post("/createPatient", async function (req: Request, res: Response) {
                 userSince: unixTS
             }, emergencyContact, emergencyNumber, bloodType, height, weight, [], []
         ).send({ from: senderAccount, gas: "6721975" }).then(async (patientResponse) => {
-            console.log(patientResponse)
             // let patientData = patientResponse.logs[0].args;
             const event = await contract.getPastEvents("PatientCreated", { fromBlock: 0, toBlock: "latest" });
-            const patientData = event[event.length - 1].returnValues;
+            const patientData = event[event.length - 1].returnValues as PatientCreatedEventObject;
             res.status(200).send({
                 message: "success",
                 data: {
@@ -180,8 +183,8 @@ app.get("/doctors", async function (req: Request, res: Response) {
     const totalDoctors = await contract.methods.totalDoctors().call();
     let doctors = [];
     for (let i = 1; i <= Number(totalDoctors); i++) {
-        let doctorAddr = await contract.methods.doctors(i).call();
-        let doctor = await contract.methods.getDoctorDetails(doctorAddr).call();
+        let doctorAddr = await contract.methods.doctors(i).call() as AddressType;
+        let doctor = await contract.methods.getDoctorDetails(doctorAddr).call() as MainContractType.DoctorStructOutput;
         if (doctorAddr.toString() !== '0x0000000000000000000000000000000000000000') {
             let doctorObj = {
                 primaryInfo: {
@@ -218,7 +221,7 @@ app.get("/doctors/:address", async function (req: Request, res: Response) {
     res.header("Access-Control-Allow-Origin", "*");
     const address: string = req.params["address"];
     try {
-        let doctor = await contract.methods.getDoctorDetails(address).call();
+        let doctor = await contract.methods.getDoctorDetails(address).call() as MainContractType.DoctorStructOutput;
         let doctorObj = {
             primaryInfo: {
                 address: doctor.primaryInfo.addr.toString(),
@@ -271,7 +274,7 @@ app.post("/createDoctor", async function (req: Request, res: Response) {
         ).send({ from: senderAccount, gas: "6721975" }).then(async (doctorResponse) => {
             console.log(doctorResponse)
             const event = await contract.getPastEvents("DoctorCreated", { fromBlock: 0, toBlock: "latest" });
-            const doctorData = event[event.length - 1].returnValues;
+            const doctorData = event[event.length - 1].returnValues as DoctorCreatedEventObject;
             res.status(200).send({
                 message: "success",
                 data: {
@@ -306,7 +309,7 @@ app.post("/whitelist", async function (req: Request, res: Response) {
             await contract.methods.addWhitelistedDoctor(doctorAddress, patientAddress).send({ from: senderAccount, gas: "6721975" }).then(async (response) => {
                 console.log(response);
                 const event = await contract.getPastEvents("WhitelistDoctor", { fromBlock: 0, toBlock: "latest" });
-                const whitelistData = event[event.length - 1].returnValues;
+                const whitelistData = event[event.length - 1].returnValues as WhitelistDoctorEventObject;
                 console.log(Number(whitelistData.timestamp));
 
                 res.status(200).send({
@@ -375,18 +378,19 @@ app.get("/patient/record/:address", async function (req: Request, res: Response)
     const patientAddress = req.params['address'];
 
     try {
-        const patient = await contract.methods.getPatientDetails(patientAddress).call();
+        const patient = await contract.methods.getPatientDetails(patientAddress).call() as MainContractType.PatientStructOutput;
         const patientExist = patient.primaryInfo.addr !== '0x0000000000000000000000000000000000000000';
 
         if (patientExist) {
             const recordList = patient.recordList;
             const records = [];
             for (let i = 0; i < recordList.length; i++) {
-                const record = await contract.methods.recordList(recordList[i]).call();
+                const record = await contract.methods.recordList(recordList[i]).call() as MainContractType.RecordStructOutput;
                 records.push({
                     encryptedID: record.encryptedID,
                     dataHash: record.dataHash,
                     issuerDoctorAddr: record.issuerDoctorAddr,
+                    patientAddr: record.patientAddr,
                     timestamp: new Date(Number(record.timestamp) * 1000).toString(),
                     recordStatus: Number(record.recordStatus as RecordStatus)
                 });
@@ -421,7 +425,7 @@ app.post("/record/add", async function (req: Request, res: Response) {
 
     try {
 
-        const patient = await contract.methods.getPatientDetails(patientAddress).call();
+        const patient = await contract.methods.getPatientDetails(patientAddress).call() as MainContractType.PatientStructOutput;
         const patientExist = patient.primaryInfo.addr !== '0x0000000000000000000000000000000000000000'
         if (patientExist) {
             const recordExist = patient.recordList.includes(encryptedID);
@@ -429,9 +433,8 @@ app.post("/record/add", async function (req: Request, res: Response) {
                 const doctorIsWhitelisted = patient.whitelistedDoctor.includes(doctorAddress);
                 if (doctorIsWhitelisted) {
                     await contract.methods.createRecord(encryptedID, dataHash, doctorAddress, patientAddress).send({ from: senderAccount, gas: "6721975" }).then(async (response) => {
-                        console.log(response);
                         const event = await contract.getPastEvents("RecordCreated", { fromBlock: 0, toBlock: "latest" });
-                        const recordData = event[event.length - 1].returnValues;
+                        const recordData = event[event.length - 1].returnValues as RecordCreatedEventObject;
                         res.status(200).send({
                             message: "success",
                             data: {
@@ -479,17 +482,16 @@ app.post("/record/add", async function (req: Request, res: Response) {
  */
 app.post("/record/edit", async function (req: Request, res: Response) {
     const senderAccount = req.body.account;
-    const patientAddress = req.body.patient;
     const encryptedID = req.body.encryptedID;
     const dataHash = req.body.dataHash;
     const recordStatus: RecordStatus = req.body.recordStatus;
 
     try {
-        const record = await contract.methods.recordList(encryptedID).call();
+        const record = await contract.methods.recordList(encryptedID).call() as MainContractType.RecordStructOutput;
         const recordExist = record.encryptedID === encryptedID;
+        const recordPatientAddr = record.patientAddr.toString();
         const recordDoctorAddr = record.issuerDoctorAddr.toString();
-        console.log(record)
-        const validSender = recordDoctorAddr === senderAccount;
+        const validSender = recordDoctorAddr === senderAccount || recordPatientAddr === senderAccount;
         if (recordExist) {
             if (validSender) {
                 await contract.methods.editRecord(encryptedID, dataHash, recordStatus).send({ from: senderAccount, gas: "6721975" }).then((response) => {
