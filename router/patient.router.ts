@@ -3,7 +3,7 @@ import { contract } from "..";
 import { MainContract } from "../types/abis";
 import { AddressType } from "typechain";
 import { PatientCreatedEventObject } from "../types/abis/MainContract";
-import { RecordStatus } from "../types";
+import { RecordStatus } from "../types/record";
 import { StatusCodes } from "http-status-codes";
 
 const router = express.Router();

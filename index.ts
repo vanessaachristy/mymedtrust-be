@@ -39,16 +39,16 @@ app.listen(port, () => {
 const cookies = require("cookie-parser");
 app.use(cookies());
 
-const patient_router = require("./router/patient.router")
-const doctor_router = require("./router/doctor.router");
-const record_router = require("./router/record.router");
-const user_router = require("./router/user.router");
+const patientRouter = require("./router/patient.router")
+const doctorRouter = require("./router/doctor.router");
+const recordRouter = require("./router/record.router");
+const userRouter = require("./router/user.router");
 
-app.use('/patient', patient_router);
-app.use('/doctor', doctor_router);
-app.use('/record', record_router);
-app.use('/user', user_router);
 
+app.use('/patient', patientRouter);
+app.use('/doctor', doctorRouter);
+app.use('/record', recordRouter);
+app.use('/user', userRouter);
 
 /**
  * Get accounts

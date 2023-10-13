@@ -2,10 +2,14 @@ import express, { Request, Response } from 'express';
 import { contract } from "..";
 import { MainContract } from "../types/abis";
 import { RecordCreatedEventObject } from '../types/abis/MainContract';
-import { RecordStatus } from '../types';
+import { RecordStatus } from '../types/record';
 import { StatusCodes } from 'http-status-codes';
 
 const router = express.Router();
+
+const observationRouter = require("./db-records/observation.router");
+
+router.use('/observation', observationRouter);
 
 /**
  * Add record to patient
@@ -142,5 +146,6 @@ router.post("/remove", async function (req: Request, res: Response) {
         })
     }
 })
+
 
 module.exports = router;
