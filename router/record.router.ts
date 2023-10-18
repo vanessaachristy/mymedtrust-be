@@ -4,6 +4,7 @@ import { MainContract } from "../types/abis";
 import { RecordCreatedEventObject } from '../types/abis/MainContract';
 import { RecordStatus } from '../types/record';
 import { StatusCodes } from 'http-status-codes';
+import verifyToken from '../helper/token-verification';
 
 const router = express.Router();
 
@@ -14,7 +15,7 @@ router.use('/observation', observationRouter);
 /**
  * Add record to patient
  */
-router.post("/add", async function (req: Request, res: Response) {
+router.post("/add", verifyToken, async function (req: Request, res: Response) {
     const senderAccount = req.body.account;
     const patientAddress = req.body.patient;
     const doctorAddress = req.body.doctor;
@@ -78,7 +79,7 @@ router.post("/add", async function (req: Request, res: Response) {
 /**
  * Edit record
  */
-router.post("/edit", async function (req: Request, res: Response) {
+router.post("/edit", verifyToken, async function (req: Request, res: Response) {
     const senderAccount = req.body.account;
     const encryptedID = req.body.encryptedID;
     const dataHash = req.body.dataHash;
@@ -122,14 +123,13 @@ router.post("/edit", async function (req: Request, res: Response) {
 /**
  * Remove record
  */
-router.post("/remove", async function (req: Request, res: Response) {
+router.post("/remove", verifyToken, async function (req: Request, res: Response) {
     const senderAccount = req.body.account;
     const patientAddress = req.body.patient;
     const encryptedID = req.body.encryptedID;
 
     try {
         await contract.methods.removeRecord(encryptedID, patientAddress).send({ from: senderAccount, gas: "6721975" }).then(async (response) => {
-            console.log(response);
             res.status(StatusCodes.OK).send({
                 message: "success"
             })

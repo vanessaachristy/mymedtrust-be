@@ -4,3 +4,7 @@ export const enum RecordStatus {
     COMPLETED,
     DECLINED
 }
+
+export type Timestamp = {
+    timestamp: string
+}

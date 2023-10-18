@@ -5,13 +5,14 @@ import { AddressType } from "typechain";
 import { PatientCreatedEventObject } from "../types/abis/MainContract";
 import { RecordStatus } from "../types/record";
 import { StatusCodes } from "http-status-codes";
+import verifyToken from "../helper/token-verification";
 
 const router = express.Router();
 
 /**
  * Get all patients
  */
-router.get("/", async function (req: Request, res: Response) {
+router.get("/", verifyToken, async function (req: Request, res: Response) {
     res.header("Access-Control-Allow-Origin", "*");
     const totalPatients = Number(await contract.methods.totalPatients().call());
     let patients = [];
@@ -54,7 +55,7 @@ router.get("/", async function (req: Request, res: Response) {
 /**
  * Get patients by address
  */
-router.get("/:address", async function (req: Request, res: Response) {
+router.get("/:address", verifyToken, async function (req: Request, res: Response) {
     res.header("Access-Control-Allow-Origin", "*");
     const address: string = req.params["address"];
     try {
@@ -99,7 +100,7 @@ router.get("/:address", async function (req: Request, res: Response) {
 /**
  * Create patient
  */
-router.post("/create", async function (req: Request, res: Response) {
+router.post("/create", verifyToken, async function (req: Request, res: Response) {
     const senderAccount = req.body.account;
     const primaryInfo = req.body.primaryInfo;
     const emergencyContact = req.body.emergencyContact;
@@ -141,7 +142,7 @@ router.post("/create", async function (req: Request, res: Response) {
 /**
  * Get patient record details
  */
-router.get("/record/:address", async function (req: Request, res: Response) {
+router.get("/record/:address", verifyToken, async function (req: Request, res: Response) {
     const patientAddress = req.params['address'];
 
     try {

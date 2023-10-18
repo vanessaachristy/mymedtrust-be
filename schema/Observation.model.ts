@@ -1,7 +1,8 @@
 import { Schema, model } from 'mongoose';
 import { Observation as IObservation } from 'fhir/r5';
+import { Timestamp } from '../types/record';
 
-export const requiredAttrs = ['resourceType', 'id', 'meta', 'text', 'identifier', 'basedOn', 'status', 'category', 'code', 'subject', 'effectiveDateTime', 'performer', 'interpretation', 'bodySite', 'component'];
+export const requiredAttrs = ['resourceType', 'effectiveDateTime'];
 export const mockObservation: IObservation = {
     resourceType: "Observation",
     id: "blood-pressure",
@@ -154,7 +155,7 @@ export const mockObservation: IObservation = {
     ]
 };
 
-const observationSchema = new Schema<IObservation>({
+export const observationSchema = new Schema<IObservation & Timestamp>({
     resourceType: {
         type: String,
         required: true
@@ -333,6 +334,10 @@ const observationSchema = new Schema<IObservation>({
         type: Object,
         // required: true
     }],
+    timestamp: {
+        type: String,
+        required: true
+    }
 
 })
 

@@ -4,13 +4,14 @@ import { MainContract } from "../types/abis";
 import { AddressType } from "typechain";
 import { DoctorCreatedEventObject, WhitelistDoctorEventObject } from '../types/abis/MainContract';
 import { StatusCodes } from 'http-status-codes';
+import verifyToken from '../helper/token-verification';
 
 const router = express.Router();
 
 /**
  * Get all doctors
  */
-router.get("/", async function (req: Request, res: Response) {
+router.get("/", verifyToken, async function (req: Request, res: Response) {
     res.header("Access-Control-Allow-Origin", "*");
     const totalDoctors = await contract.methods.totalDoctors().call();
     let doctors = [];
@@ -49,7 +50,7 @@ router.get("/", async function (req: Request, res: Response) {
 /**
  * Get doctor by address
  */
-router.get("/:address", async function (req: Request, res: Response) {
+router.get("/:address", verifyToken, async function (req: Request, res: Response) {
     res.header("Access-Control-Allow-Origin", "*");
     const address: string = req.params["address"];
     try {
@@ -90,7 +91,7 @@ router.get("/:address", async function (req: Request, res: Response) {
 /**
  * Create doctor
  */
-router.post("/create", async function (req: Request, res: Response) {
+router.post("/create", verifyToken, async function (req: Request, res: Response) {
     const senderAccount = req.body.account;
     const primaryInfo = req.body.primaryInfo;
     const qualification = req.body.qualification;
@@ -129,7 +130,7 @@ router.post("/create", async function (req: Request, res: Response) {
 /**
  * Whitelist a doctor
  */
-router.post("/whitelist", async function (req: Request, res: Response) {
+router.post("/whitelist", verifyToken, async function (req: Request, res: Response) {
     const senderAccount = req.body.account;
     const patientAddress = req.body.patient;
     const doctorAddress = req.body.doctor;
@@ -177,7 +178,7 @@ router.post("/whitelist", async function (req: Request, res: Response) {
 /**
  * Remove whitelisted doctor
  */
-router.post("/whitelist/remove", async function (req: Request, res: Response) {
+router.post("/whitelist/remove", verifyToken, async function (req: Request, res: Response) {
     const senderAccount = req.body.account;
     const patientAddress = req.body.patient;
     const doctorAddress = req.body.doctor;
