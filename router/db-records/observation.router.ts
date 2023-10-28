@@ -3,10 +3,11 @@ import { Observation, requiredAttrs } from "../../schema/Observation.model";
 import { Observation as IObservation } from 'fhir/r5';
 import { StatusCodes } from 'http-status-codes';
 import verifyToken from '../../helper/token-verification';
-import { contract } from '../..';
+import { contract, recordContract } from '../..';
 import { AddressRequest } from '../../types/user';
 import { MainContract } from '../../types/abis';
-import { RecordCreatedEventObject } from '../../types/abis/MainContract';
+import { RecordContract } from '../../types/abis/RecordContract';
+import { RecordCreatedEventObject } from '../../types/abis/RecordContract';
 import mongoose from 'mongoose';
 import { EMPTY_ADDRESS } from '../../common/const';
 import { RecordStatus } from '../../types/record';
@@ -32,13 +33,13 @@ router.get("/", verifyToken, async (req: Request, res: Response) => {
 router.get("/:id", verifyToken, async (req: Request, res: Response) => {
     try {
         const recordID = req.params['id'];
-        const record = await contract.methods.recordList(recordID).call() as MainContract.RecordStructOutput;
+        const record = await recordContract.methods.recordList(recordID).call() as RecordContract.RecordStructOutput;
         const observation = await Observation.findOne({
             _id: recordID
         });
-        const recordExist = record.encryptedID && record.dataHash && record.issuerDoctorAddr !== EMPTY_ADDRESS && record.patientAddr !== EMPTY_ADDRESS && observation._id;
-        const validRecord = atob(record.dataHash) === JSON.stringify(observation.toJSON());
+        const recordExist = record.encryptedID && record.dataHash && record.issuerDoctorAddr !== EMPTY_ADDRESS && record.patientAddr !== EMPTY_ADDRESS && observation && observation._id;
         if (recordExist) {
+            const validRecord = atob(record.dataHash) === JSON.stringify(observation.toJSON());
 
             if (validRecord) {
                 res.status(StatusCodes.OK).send({
@@ -110,20 +111,23 @@ router.post("/create", verifyToken, async (req: Request, res: Response) => {
                     })
                     const dataHash = btoa(JSON.stringify(queriedObservation.toJSON()));
 
-                    await contract.methods.createRecord(encryptedID, dataHash, doctorAddress, patientAddress).send({ from: senderAccount, gas: "6721975" }).then(async (response) => {
-                        const event = await contract.getPastEvents("RecordCreated", { fromBlock: 0, toBlock: "latest" });
-                        const recordData = event[event.length - 1].returnValues as RecordCreatedEventObject;
-                        res.status(StatusCodes.OK).send({
-                            message: "success",
-                            data: {
-                                dataID: recordData.encryptedID.toString(),
-                                patient: recordData.patientAddr.toString(),
-                                doctor: recordData.issuerDoctorAddr.toString(),
-                                timestamp: new Date(Number(recordData.timestamp) * 1000).toString(),
-                                status: Number(recordData.recordStatus),
-                                observation: observation
-                            }
+                    await recordContract.methods.createRecord(encryptedID, dataHash, doctorAddress, patientAddress).send({ from: senderAccount, gas: "6721975" }).then(async (response) => {
+                        await contract.methods.createRecord(encryptedID, patientAddress).send({ from: senderAccount, gas: '6721975' }).then(async (_response) => {
+                            const event = await recordContract.getPastEvents("RecordCreated", { fromBlock: 0, toBlock: "latest" });
+                            const recordData = event[event.length - 1].returnValues as RecordCreatedEventObject;
+                            res.status(StatusCodes.OK).send({
+                                message: "success",
+                                data: {
+                                    dataID: recordData.encryptedID.toString(),
+                                    patient: recordData.patientAddr.toString(),
+                                    doctor: recordData.issuerDoctorAddr.toString(),
+                                    timestamp: new Date(Number(recordData.timestamp) * 1000).toString(),
+                                    status: Number(recordData.recordStatus),
+                                    observation: observation
+                                }
+                            })
                         })
+
                     })
                 } else {
                     res.status(StatusCodes.OK).send({
@@ -164,7 +168,7 @@ router.post("/edit", verifyToken, async (req: Request, res: Response) => {
     const body = req.body as IObservation & AddressRequest;
 
     try {
-        const record = await contract.methods.recordList(encryptedID).call() as MainContract.RecordStructOutput;
+        const record = await recordContract.methods.recordList(encryptedID).call() as RecordContract.RecordStructOutput;
         const recordExist = record.encryptedID === encryptedID;
         const recordPatientAddr = record.patientAddr.toString();
         const recordDoctorAddr = record.issuerDoctorAddr.toString();
@@ -181,7 +185,7 @@ router.post("/edit", verifyToken, async (req: Request, res: Response) => {
                     _id: encryptedID
                 })
                 const dataHash = btoa(JSON.stringify(queriedObservation.toJSON()));
-                await contract.methods.editRecord(encryptedID, dataHash, recordStatus).send({ from: senderAccount, gas: "6721975" }).then((response) => {
+                await recordContract.methods.editRecord(encryptedID, dataHash, recordStatus).send({ from: senderAccount, gas: "6721975" }).then((response) => {
                     res.status(StatusCodes.OK).send({
                         message: "success",
                         data: queriedObservation
@@ -225,11 +229,13 @@ router.post("/delete", verifyToken, async (req: Request, res: Response) => {
                     await Observation.deleteOne({
                         _id: encryptedID
                     }).then(async (_) => {
-                        console.log("logs", encryptedID, patientAddress)
                         await contract.methods.removeRecord(encryptedID, patientAddress).send({ from: senderAccount, gas: "6721975" }).then(async (_) => {
-                            res.status(StatusCodes.OK).send({
-                                message: "success"
+                            await recordContract.methods.removeRecord(encryptedID).send({ from: senderAccount, gas: '6721975' }).then(async (_res) => {
+                                res.status(StatusCodes.OK).send({
+                                    message: "success"
+                                })
                             })
+
                         });
                     })
                 } else {

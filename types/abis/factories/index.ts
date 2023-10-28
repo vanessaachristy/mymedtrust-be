@@ -2,3 +2,4 @@
 /* tslint:disable */
 /* eslint-disable */
 export { MainContract__factory } from "./MainContract__factory";
+export { RecordContract__factory } from "./RecordContract__factory";

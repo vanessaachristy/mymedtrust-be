@@ -107,31 +107,6 @@ export declare namespace MainContract {
     qualification: string;
     major: string;
   };
-
-  export type RecordStruct = {
-    encryptedID: string;
-    dataHash: string;
-    issuerDoctorAddr: string;
-    patientAddr: string;
-    timestamp: BigNumberish;
-    recordStatus: BigNumberish;
-  };
-
-  export type RecordStructOutput = [
-    string,
-    string,
-    string,
-    string,
-    BigNumber,
-    number
-  ] & {
-    encryptedID: string;
-    dataHash: string;
-    issuerDoctorAddr: string;
-    patientAddr: string;
-    timestamp: BigNumber;
-    recordStatus: number;
-  };
 }
 
 export interface MainContractInterface extends utils.Interface {
@@ -140,7 +115,6 @@ export interface MainContractInterface extends utils.Interface {
     "doctors(uint256)": FunctionFragment;
     "patientList(address)": FunctionFragment;
     "patients(uint256)": FunctionFragment;
-    "recordList(string)": FunctionFragment;
     "totalDoctors()": FunctionFragment;
     "totalPatients()": FunctionFragment;
     "createPatient((address,string,string,string,string,string,string,string,uint256),string,string,string,string,string,address[],string[])": FunctionFragment;
@@ -151,9 +125,7 @@ export interface MainContractInterface extends utils.Interface {
     "createDoctor((address,string,string,string,string,string,string,string,uint256),string,string)": FunctionFragment;
     "setDoctorDetails((address,string,string,string,string,string,string,string,uint256),string,string)": FunctionFragment;
     "getDoctorDetails(address)": FunctionFragment;
-    "createRecord(string,string,address,address)": FunctionFragment;
-    "getRecordDetails(string)": FunctionFragment;
-    "editRecord(string,string,uint8)": FunctionFragment;
+    "createRecord(string,address)": FunctionFragment;
     "removeRecord(string,address)": FunctionFragment;
   };
 
@@ -163,7 +135,6 @@ export interface MainContractInterface extends utils.Interface {
       | "doctors"
       | "patientList"
       | "patients"
-      | "recordList"
       | "totalDoctors"
       | "totalPatients"
       | "createPatient"
@@ -175,8 +146,6 @@ export interface MainContractInterface extends utils.Interface {
       | "setDoctorDetails"
       | "getDoctorDetails"
       | "createRecord"
-      | "getRecordDetails"
-      | "editRecord"
       | "removeRecord"
   ): FunctionFragment;
 
@@ -190,7 +159,6 @@ export interface MainContractInterface extends utils.Interface {
     functionFragment: "patients",
     values: [BigNumberish]
   ): string;
-  encodeFunctionData(functionFragment: "recordList", values: [string]): string;
   encodeFunctionData(
     functionFragment: "totalDoctors",
     values?: undefined
@@ -251,15 +219,7 @@ export interface MainContractInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "createRecord",
-    values: [string, string, string, string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getRecordDetails",
-    values: [string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "editRecord",
-    values: [string, string, BigNumberish]
+    values: [string, string]
   ): string;
   encodeFunctionData(
     functionFragment: "removeRecord",
@@ -273,7 +233,6 @@ export interface MainContractInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "patients", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "recordList", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "totalDoctors",
     data: BytesLike
@@ -319,11 +278,6 @@ export interface MainContractInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "getRecordDetails",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "editRecord", data: BytesLike): Result;
-  decodeFunctionResult(
     functionFragment: "removeRecord",
     data: BytesLike
   ): Result;
@@ -331,13 +285,11 @@ export interface MainContractInterface extends utils.Interface {
   events: {
     "DoctorCreated(address,string,string,uint256)": EventFragment;
     "PatientCreated(address,string,string,uint256)": EventFragment;
-    "RecordCreated(string,string,address,uint256,uint8,address)": EventFragment;
     "WhitelistDoctor(address,address,uint256)": EventFragment;
   };
 
   getEvent(nameOrSignatureOrTopic: "DoctorCreated"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "PatientCreated"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "RecordCreated"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "WhitelistDoctor"): EventFragment;
 }
 
@@ -366,21 +318,6 @@ export type PatientCreatedEvent = TypedEvent<
 >;
 
 export type PatientCreatedEventFilter = TypedEventFilter<PatientCreatedEvent>;
-
-export interface RecordCreatedEventObject {
-  encryptedID: string;
-  dataHash: string;
-  issuerDoctorAddr: string;
-  timestamp: BigNumber;
-  recordStatus: number;
-  patientAddr: string;
-}
-export type RecordCreatedEvent = TypedEvent<
-  [string, string, string, BigNumber, number, string],
-  RecordCreatedEventObject
->;
-
-export type RecordCreatedEventFilter = TypedEventFilter<RecordCreatedEvent>;
 
 export interface WhitelistDoctorEventObject {
   patientAddr: string;
@@ -457,20 +394,6 @@ export interface MainContract extends BaseContract {
 
     patients(arg0: BigNumberish, overrides?: CallOverrides): Promise<[string]>;
 
-    recordList(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<
-      [string, string, string, string, BigNumber, number] & {
-        encryptedID: string;
-        dataHash: string;
-        issuerDoctorAddr: string;
-        patientAddr: string;
-        timestamp: BigNumber;
-        recordStatus: number;
-      }
-    >;
-
     totalDoctors(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     totalPatients(overrides?: CallOverrides): Promise<[BigNumber]>;
@@ -537,21 +460,7 @@ export interface MainContract extends BaseContract {
 
     createRecord(
       _encryptedID: string,
-      _dataHash: string,
-      _issuerDoctorAddr: string,
       _patientAddr: string,
-      overrides?: Overrides & { from?: string }
-    ): Promise<ContractTransaction>;
-
-    getRecordDetails(
-      _encryptedID: string,
-      overrides?: CallOverrides
-    ): Promise<[MainContract.RecordStructOutput]>;
-
-    editRecord(
-      _encryptedID: string,
-      _dataHash: string,
-      _recordStatus: BigNumberish,
       overrides?: Overrides & { from?: string }
     ): Promise<ContractTransaction>;
 
@@ -590,20 +499,6 @@ export interface MainContract extends BaseContract {
   >;
 
   patients(arg0: BigNumberish, overrides?: CallOverrides): Promise<string>;
-
-  recordList(
-    arg0: string,
-    overrides?: CallOverrides
-  ): Promise<
-    [string, string, string, string, BigNumber, number] & {
-      encryptedID: string;
-      dataHash: string;
-      issuerDoctorAddr: string;
-      patientAddr: string;
-      timestamp: BigNumber;
-      recordStatus: number;
-    }
-  >;
 
   totalDoctors(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -671,21 +566,7 @@ export interface MainContract extends BaseContract {
 
   createRecord(
     _encryptedID: string,
-    _dataHash: string,
-    _issuerDoctorAddr: string,
     _patientAddr: string,
-    overrides?: Overrides & { from?: string }
-  ): Promise<ContractTransaction>;
-
-  getRecordDetails(
-    _encryptedID: string,
-    overrides?: CallOverrides
-  ): Promise<MainContract.RecordStructOutput>;
-
-  editRecord(
-    _encryptedID: string,
-    _dataHash: string,
-    _recordStatus: BigNumberish,
     overrides?: Overrides & { from?: string }
   ): Promise<ContractTransaction>;
 
@@ -731,20 +612,6 @@ export interface MainContract extends BaseContract {
     >;
 
     patients(arg0: BigNumberish, overrides?: CallOverrides): Promise<string>;
-
-    recordList(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<
-      [string, string, string, string, BigNumber, number] & {
-        encryptedID: string;
-        dataHash: string;
-        issuerDoctorAddr: string;
-        patientAddr: string;
-        timestamp: BigNumber;
-        recordStatus: number;
-      }
-    >;
 
     totalDoctors(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -812,21 +679,7 @@ export interface MainContract extends BaseContract {
 
     createRecord(
       _encryptedID: string,
-      _dataHash: string,
-      _issuerDoctorAddr: string,
       _patientAddr: string,
-      overrides?: CallOverrides
-    ): Promise<void>;
-
-    getRecordDetails(
-      _encryptedID: string,
-      overrides?: CallOverrides
-    ): Promise<MainContract.RecordStructOutput>;
-
-    editRecord(
-      _encryptedID: string,
-      _dataHash: string,
-      _recordStatus: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -864,23 +717,6 @@ export interface MainContract extends BaseContract {
       timestamp?: null
     ): PatientCreatedEventFilter;
 
-    "RecordCreated(string,string,address,uint256,uint8,address)"(
-      encryptedID?: null,
-      dataHash?: null,
-      issuerDoctorAddr?: null,
-      timestamp?: null,
-      recordStatus?: null,
-      patientAddr?: null
-    ): RecordCreatedEventFilter;
-    RecordCreated(
-      encryptedID?: null,
-      dataHash?: null,
-      issuerDoctorAddr?: null,
-      timestamp?: null,
-      recordStatus?: null,
-      patientAddr?: null
-    ): RecordCreatedEventFilter;
-
     "WhitelistDoctor(address,address,uint256)"(
       patientAddr?: null,
       doctorAddr?: null,
@@ -901,8 +737,6 @@ export interface MainContract extends BaseContract {
     patientList(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     patients(arg0: BigNumberish, overrides?: CallOverrides): Promise<BigNumber>;
-
-    recordList(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     totalDoctors(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -970,21 +804,7 @@ export interface MainContract extends BaseContract {
 
     createRecord(
       _encryptedID: string,
-      _dataHash: string,
-      _issuerDoctorAddr: string,
       _patientAddr: string,
-      overrides?: Overrides & { from?: string }
-    ): Promise<BigNumber>;
-
-    getRecordDetails(
-      _encryptedID: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    editRecord(
-      _encryptedID: string,
-      _dataHash: string,
-      _recordStatus: BigNumberish,
       overrides?: Overrides & { from?: string }
     ): Promise<BigNumber>;
 
@@ -1013,11 +833,6 @@ export interface MainContract extends BaseContract {
 
     patients(
       arg0: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    recordList(
-      arg0: string,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
@@ -1087,21 +902,7 @@ export interface MainContract extends BaseContract {
 
     createRecord(
       _encryptedID: string,
-      _dataHash: string,
-      _issuerDoctorAddr: string,
       _patientAddr: string,
-      overrides?: Overrides & { from?: string }
-    ): Promise<PopulatedTransaction>;
-
-    getRecordDetails(
-      _encryptedID: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    editRecord(
-      _encryptedID: string,
-      _dataHash: string,
-      _recordStatus: BigNumberish,
       overrides?: Overrides & { from?: string }
     ): Promise<PopulatedTransaction>;
 

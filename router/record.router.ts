@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
-import { contract } from "..";
-import { MainContract } from "../types/abis";
-import { RecordCreatedEventObject } from '../types/abis/MainContract';
+import { contract, recordContract } from "..";
+import { MainContract, RecordContract } from "../types/abis";
+import { RecordCreatedEventObject } from '../types/abis/RecordContract';
 import { RecordStatus } from '../types/record';
 import { StatusCodes } from 'http-status-codes';
 import verifyToken from '../helper/token-verification';
@@ -31,18 +31,21 @@ router.post("/add", verifyToken, async function (req: Request, res: Response) {
             if (!recordExist) {
                 const doctorIsWhitelisted = patient.whitelistedDoctor.includes(doctorAddress);
                 if (doctorIsWhitelisted) {
-                    await contract.methods.createRecord(encryptedID, dataHash, doctorAddress, patientAddress).send({ from: senderAccount, gas: "6721975" }).then(async (response) => {
-                        const event = await contract.getPastEvents("RecordCreated", { fromBlock: 0, toBlock: "latest" });
-                        const recordData = event[event.length - 1].returnValues as RecordCreatedEventObject;
-                        res.status(StatusCodes.OK).send({
-                            message: "success",
-                            data: {
-                                dataID: recordData.encryptedID.toString(),
-                                patient: recordData.patientAddr.toString(),
-                                doctor: recordData.issuerDoctorAddr.toString(),
-                                timestamp: new Date(Number(recordData.timestamp) * 1000).toString(),
-                                status: Number(recordData.recordStatus)
-                            }
+                    const recordList = await recordContract.methods;
+                    await recordContract.methods.createRecord(encryptedID, dataHash, doctorAddress, patientAddress).send({ from: senderAccount, gas: "6721975" }).then(async (response) => {
+                        await contract.methods.createRecord(encryptedID, patientAddress).send({ from: senderAccount, gas: '6721975' }).then(async (_response) => {
+                            const event = await recordContract.getPastEvents("RecordCreated", { fromBlock: 0, toBlock: "latest" });
+                            const recordData = event[event.length - 1].returnValues as RecordCreatedEventObject;
+                            res.status(StatusCodes.OK).send({
+                                message: "success",
+                                data: {
+                                    dataID: recordData.encryptedID.toString(),
+                                    patient: recordData.patientAddr.toString(),
+                                    doctor: recordData.issuerDoctorAddr.toString(),
+                                    timestamp: new Date(Number(recordData.timestamp) * 1000).toString(),
+                                    status: Number(recordData.recordStatus)
+                                }
+                            })
                         })
                     })
                 } else {
@@ -86,14 +89,14 @@ router.post("/edit", verifyToken, async function (req: Request, res: Response) {
     const recordStatus: RecordStatus = req.body.recordStatus;
 
     try {
-        const record = await contract.methods.recordList(encryptedID).call() as MainContract.RecordStructOutput;
+        const record = await recordContract.methods.recordList(encryptedID).call() as RecordContract.RecordStructOutput;
         const recordExist = record.encryptedID === encryptedID;
         const recordPatientAddr = record.patientAddr.toString();
         const recordDoctorAddr = record.issuerDoctorAddr.toString();
         const validSender = recordDoctorAddr === senderAccount || recordPatientAddr === senderAccount;
         if (recordExist) {
             if (validSender) {
-                await contract.methods.editRecord(encryptedID, dataHash, recordStatus).send({ from: senderAccount, gas: "6721975" }).then((response) => {
+                await recordContract.methods.editRecord(encryptedID, dataHash, recordStatus).send({ from: senderAccount, gas: "6721975" }).then((response) => {
                     res.status(StatusCodes.OK).send({
                         message: "success"
                     })
@@ -130,8 +133,10 @@ router.post("/remove", verifyToken, async function (req: Request, res: Response)
 
     try {
         await contract.methods.removeRecord(encryptedID, patientAddress).send({ from: senderAccount, gas: "6721975" }).then(async (response) => {
-            res.status(StatusCodes.OK).send({
-                message: "success"
+            await recordContract.methods.removeRecord(encryptedID).send({ from: senderAccount, gas: '6721975' }).then(async (_response) => {
+                res.status(StatusCodes.OK).send({
+                    message: "success"
+                })
             })
         })
     } catch (err) {

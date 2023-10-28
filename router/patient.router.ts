@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express";
 import { contract } from "..";
-import { MainContract } from "../types/abis";
+import { MainContract, RecordContract } from "../types/abis";
 import { AddressType } from "typechain";
 import { PatientCreatedEventObject } from "../types/abis/MainContract";
 import { RecordStatus } from "../types/record";
@@ -153,7 +153,7 @@ router.get("/record/:address", verifyToken, async function (req: Request, res: R
             const recordList = patient.recordList;
             const records = [];
             for (let i = 0; i < recordList.length; i++) {
-                const record = await contract.methods.recordList(recordList[i]).call() as MainContract.RecordStructOutput;
+                const record = await contract.methods.recordList(recordList[i]).call() as RecordContract.RecordStructOutput;
                 records.push({
                     encryptedID: record.encryptedID,
                     dataHash: record.dataHash,

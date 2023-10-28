@@ -1,6 +1,7 @@
 import express, { Request, Response, Application } from 'express';
 import dotenv from 'dotenv';
-import MainContract from "./abis/MainContract.json"
+import MainContract from "./abis/MainContract.json";
+import RecordContract from "./abis/RecordContract.json";
 import web3 from "web3";
 import { mongoUrl } from './schema/const';
 import { connect } from 'mongoose';
@@ -20,6 +21,10 @@ const port = process.env.PORT || 3000;
 const contractAbi = MainContract.abi;
 const contractAddress = MainContract.networks[5777].address;
 export const contract = new web3js.eth.Contract(contractAbi, contractAddress) as any;
+
+const recordContractAbi = RecordContract.abi;
+const recordContractAddress = RecordContract.networks[5777].address;
+export const recordContract = new web3js.eth.Contract(recordContractAbi, recordContractAddress) as any;
 
 app.get('/', (req: Request, res: Response) => {
     res.send("Welcome to MyMedTrust!")
