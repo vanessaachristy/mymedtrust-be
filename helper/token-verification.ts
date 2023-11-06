@@ -32,8 +32,8 @@ const verifyToken = (req: UserRequest, res: Response, next: NextFunction) => {
             })
         }
 
-        const { username, address } = jwt.decode(token) as JwtPayload;
-        req.username = username;
+        const { email, address } = jwt.decode(token) as JwtPayload;
+        req.email = email;
         req.address = address;
     } catch (err) {
         res.status(StatusCodes.BAD_REQUEST).json({

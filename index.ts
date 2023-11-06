@@ -16,7 +16,7 @@ const web3js = new web3(
 const app: Application = express();
 app.use(express.urlencoded());
 app.use(express.json());
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5500;
 
 const contractAbi = MainContract.abi;
 const contractAddress = MainContract.networks[5777].address;
