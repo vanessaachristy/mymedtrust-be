@@ -16,7 +16,7 @@ const web3js = new web3(
 const app: Application = express();
 app.use(express.urlencoded());
 app.use(express.json());
-const port = process.env.PORT || 5500;
+const port = process.env.PORT || 3000;
 
 const contractAbi = MainContract.abi;
 const contractAddress = MainContract.networks[5777].address;
@@ -49,6 +49,11 @@ const doctorRouter = require("./router/doctor.router");
 const recordRouter = require("./router/record.router");
 const userRouter = require("./router/user.router");
 
+app.use((req, res, next) => {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    next();
+});
 
 app.use('/patient', patientRouter);
 app.use('/doctor', doctorRouter);

@@ -50,8 +50,7 @@ router.post("/login", async (req, res) => {
             const validation = await bcrypt.compare(password, user.password);
             if (!validation) {
                 return res.status(StatusCodes.UNAUTHORIZED).json({
-                    message: "error",
-                    error: "Credentials are mismatched."
+                    message: "Credentials are mismatched."
                 })
             }
             const token = jwt.sign({
