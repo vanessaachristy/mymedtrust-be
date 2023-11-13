@@ -1,4 +1,5 @@
 import { Schema, model } from 'mongoose';
+import { UserType } from '../types/user';
 
 
 interface IUser {
@@ -6,6 +7,7 @@ interface IUser {
     email: string;
     password: string;
     address: string;
+    userType: UserType;
 }
 
 const userSchema = new Schema<IUser>({
@@ -15,9 +17,10 @@ const userSchema = new Schema<IUser>({
     },
     email: {
         type: String,
-        unique: true,
         minlength: 6,
         required: true,
+        unique: true,
+
     },
     password: {
         type: String,
@@ -30,6 +33,10 @@ const userSchema = new Schema<IUser>({
         minlength: 42,
         unique: true,
     },
+    userType: {
+        type: String,
+        required: true
+    }
 });
 
 export const User = model<IUser>("User", userSchema)

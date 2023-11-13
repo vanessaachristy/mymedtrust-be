@@ -5,6 +5,7 @@ import RecordContract from "./abis/RecordContract.json";
 import web3 from "web3";
 import { mongoUrl } from './schema/const';
 import { connect } from 'mongoose';
+import cors from 'cors';
 
 //For env File 
 dotenv.config();
@@ -49,9 +50,17 @@ const doctorRouter = require("./router/doctor.router");
 const recordRouter = require("./router/record.router");
 const userRouter = require("./router/user.router");
 
+app.use(
+    cors({
+        origin: "http://localhost:3001",
+        credentials: true,
+    })
+);
 app.use((req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.header('Access-Control-Allow-Origin', 'http://localhost:3001'); // Replace with your frontend's origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+    res.header('Access-Control-Allow-Credentials', 'true'); // Allow cookies
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
     next();
 });
 

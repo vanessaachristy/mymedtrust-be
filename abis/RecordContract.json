@@ -9470,12 +9470,12 @@
     "5777": {
       "events": {},
       "links": {},
-      "address": "0x48c6dD3aFbffe238969c9e9C472f1E7C6280A9AD",
-      "transactionHash": "0x0ab1b84bb9897dba04b78d146f4afbbb9d17bbe142688ff34dd185e25a24b7b0"
+      "address": "0x954D215619217254499B7752a688b9C6228Aa6f7",
+      "transactionHash": "0x2736732d53a80333ca9699ae73a92dddbe06880f75cce3781db34a015e7a2397"
     }
   },
   "schemaVersion": "3.4.15",
-  "updatedAt": "2023-11-06T12:13:46.729Z",
+  "updatedAt": "2023-11-11T09:30:53.039Z",
   "networkType": "ethereum",
   "devdoc": {
     "kind": "dev",

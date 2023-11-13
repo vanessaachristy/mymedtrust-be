@@ -162,11 +162,9 @@ export const observationSchema = new Schema<IObservation & Timestamp>({
     },
     id: {
         type: String,
-        required: true
     },
     meta: {
         type: Object,
-        required: true
     },
     implicitRules: {
         type: String,

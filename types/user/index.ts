@@ -11,7 +11,7 @@ export type UserRequest = {
     gender?: Gender;
     homeAddress?: string;
     userType?: UserType;
-} & Request & PatientRequest & DoctorRequest & AddressRequest;
+} & Request & PatientRequest & DoctorRequest & AdminRequest & AddressRequest;
 
 export type PatientRequest = {
     emergencyContact?: {
@@ -24,9 +24,12 @@ export type PatientRequest = {
 }
 
 export type DoctorRequest = {
-    hospital?: string;
     qualification?: string;
     major?: string;
+}
+
+export type AdminRequest = {
+    adminKey?: string;
 }
 
 export const enum BloodType {
