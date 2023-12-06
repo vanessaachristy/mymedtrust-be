@@ -54,13 +54,14 @@ app.use(
     cors({
         origin: "http://localhost:3001",
         credentials: true,
+        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE'
     })
 );
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', 'http://localhost:3001'); // Replace with your frontend's origin
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
     res.header('Access-Control-Allow-Credentials', 'true'); // Allow cookies
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+    res.header("Access-Control-Allow-Headers", 'Content-Type, Authorization');
     next();
 });
 

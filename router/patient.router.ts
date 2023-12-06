@@ -1,11 +1,13 @@
 import express, { Request, Response } from "express";
-import { contract } from "..";
+import { contract, recordContract } from "..";
 import { MainContract, RecordContract } from "../types/abis";
 import { AddressType } from "typechain";
 import { PatientCreatedEventObject } from "../types/abis/MainContract";
 import { RecordStatus } from "../types/record";
 import { StatusCodes } from "http-status-codes";
 import verifyToken from "../helper/token-verification";
+import { Observation } from "../schema/Observation.model";
+import { Condition } from "../schema/Condition.model";
 
 const router = express.Router();
 
@@ -13,7 +15,6 @@ const router = express.Router();
  * Get all patients
  */
 router.get("/", verifyToken, async function (req: Request, res: Response) {
-    res.header("Access-Control-Allow-Origin", "*");
     const totalPatients = Number(await contract.methods.totalPatients().call());
     let patients = [];
     for (let i = 1; i <= Number(totalPatients); i++) {
@@ -56,7 +57,6 @@ router.get("/", verifyToken, async function (req: Request, res: Response) {
  * Get patients by address
  */
 router.get("/:address", verifyToken, async function (req: Request, res: Response) {
-    res.header("Access-Control-Allow-Origin", "*");
     const address: string = req.params["address"];
     try {
         let patient = await contract.methods.getPatientDetails(address).call();
@@ -153,15 +153,127 @@ router.get("/record/:address", verifyToken, async function (req: Request, res: R
             const recordList = patient.recordList;
             const records = [];
             for (let i = 0; i < recordList.length; i++) {
-                const record = await contract.methods.recordList(recordList[i]).call() as RecordContract.RecordStructOutput;
-                records.push({
+                const record = await recordContract.methods.recordList(recordList[i]).call() as RecordContract.RecordStructOutput;
+                let recordObject = {
                     encryptedID: record.encryptedID,
                     dataHash: record.dataHash,
                     issuerDoctorAddr: record.issuerDoctorAddr,
                     patientAddr: record.patientAddr,
                     timestamp: new Date(Number(record.timestamp) * 1000).toString(),
-                    recordStatus: Number(record.recordStatus as RecordStatus)
+                    recordStatus: Number(record.recordStatus as RecordStatus),
+                }
+                const observation = await Observation.findOne({
+                    _id: record.encryptedID
                 });
+                if (!observation) {
+                    const condition = await Condition.findOne({
+                        _id: record.encryptedID
+                    });
+                    recordObject['data'] = condition;
+                } else {
+                    recordObject['data'] = observation;
+                }
+                records.push(recordObject);
+            }
+            res.status(StatusCodes.OK).send({
+                message: "success",
+                data: records
+            })
+        } else {
+            res.status(StatusCodes.BAD_REQUEST).json({
+                message: "error",
+                error: "Patient does not exist"
+            })
+        }
+    } catch (err) {
+        res.status(StatusCodes.BAD_REQUEST).json({
+            message: "error",
+            error: err.toString()
+        })
+    }
+})
+
+/**
+ * Get patient observation record
+ */
+router.get("/record/observation/:address", verifyToken, async function (req: Request, res: Response) {
+    const patientAddress = req.params['address'];
+
+    try {
+        const patient = await contract.methods.getPatientDetails(patientAddress).call() as MainContract.PatientStructOutput;
+        const patientExist = patient.primaryInfo.addr !== '0x0000000000000000000000000000000000000000';
+
+        if (patientExist) {
+            const recordList = patient.recordList;
+            const records = [];
+            for (let i = 0; i < recordList.length; i++) {
+                const record = await recordContract.methods.recordList(recordList[i]).call() as RecordContract.RecordStructOutput;
+                const observation = await Observation.findOne({
+                    _id: record.encryptedID
+                });
+                if (observation) {
+                    records.push(
+                        {
+                            encryptedID: record.encryptedID,
+                            dataHash: record.dataHash,
+                            issuerDoctorAddr: record.issuerDoctorAddr,
+                            patientAddr: record.patientAddr,
+                            timestamp: new Date(Number(record.timestamp) * 1000).toString(),
+                            recordStatus: Number(record.recordStatus as RecordStatus),
+                            data: observation
+                        }
+                    )
+                };
+            }
+            res.status(StatusCodes.OK).send({
+                message: "success",
+                data: records
+            })
+        } else {
+            res.status(StatusCodes.BAD_REQUEST).json({
+                message: "error",
+                error: "Patient does not exist"
+            })
+        }
+    } catch (err) {
+        res.status(StatusCodes.BAD_REQUEST).json({
+            message: "error",
+            error: err.toString()
+        })
+    }
+})
+
+/**
+ * Get patient condition record
+ */
+router.get("/record/condition/:address", verifyToken, async function (req: Request, res: Response) {
+    const patientAddress = req.params['address'];
+
+    try {
+        const patient = await contract.methods.getPatientDetails(patientAddress).call() as MainContract.PatientStructOutput;
+        const patientExist = patient.primaryInfo.addr !== '0x0000000000000000000000000000000000000000';
+
+        if (patientExist) {
+            const recordList = patient.recordList;
+            const records = [];
+            for (let i = 0; i < recordList.length; i++) {
+                const record = await recordContract.methods.recordList(recordList[i]).call() as RecordContract.RecordStructOutput;
+                const condition = await Condition.findOne({
+                    _id: record.encryptedID
+                });
+                if (condition) {
+                    records.push(
+                        {
+                            encryptedID: record.encryptedID,
+                            dataHash: record.dataHash,
+                            issuerDoctorAddr: record.issuerDoctorAddr,
+                            patientAddr: record.patientAddr,
+                            timestamp: new Date(Number(record.timestamp) * 1000).toString(),
+                            recordStatus: Number(record.recordStatus as RecordStatus),
+                            data: condition
+                        }
+                    )
+                };
             }
             res.status(StatusCodes.OK).send({
                 message: "success",

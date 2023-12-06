@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
-import { Observation, requiredAttrs } from "../../schema/Observation.model";
-import { Observation as IObservation } from 'fhir/r5';
+import { Condition, requiredAttrs } from "../../schema/Condition.model";
+import { Condition as ICondition } from 'fhir/r5';
 import { StatusCodes } from 'http-status-codes';
 import verifyToken from '../../helper/token-verification';
 import { contract, recordContract } from '../..';
@@ -17,10 +17,10 @@ const router = express.Router();
 
 router.get("/", verifyToken, async (req: Request, res: Response) => {
     try {
-        const observations = await Observation.find();
+        const conditions = await Condition.find();
         res.status(StatusCodes.OK).json({
             message: 'success',
-            data: observations
+            data: conditions
         })
     } catch (err) {
         return res.status(StatusCodes.BAD_REQUEST).json({
@@ -30,16 +30,17 @@ router.get("/", verifyToken, async (req: Request, res: Response) => {
     }
 })
 
+
 router.get("/:id", verifyToken, async (req: Request, res: Response) => {
     try {
         const recordID = req.params['id'];
         const record = await recordContract.methods.recordList(recordID).call() as RecordContract.RecordStructOutput;
-        const observation = await Observation.findOne({
+        const condition = await Condition.findOne({
             _id: recordID
         });
-        const recordExist = record.encryptedID && record.dataHash && record.issuerDoctorAddr !== EMPTY_ADDRESS && record.patientAddr !== EMPTY_ADDRESS && observation && observation._id;
+        const recordExist = record.encryptedID && record.dataHash && record.issuerDoctorAddr !== EMPTY_ADDRESS && record.patientAddr !== EMPTY_ADDRESS && condition && condition._id;
         if (recordExist) {
-            const validRecord = atob(record.dataHash) === JSON.stringify(observation.toJSON());
+            const validRecord = atob(record.dataHash) === JSON.stringify(condition.toJSON());
 
             if (validRecord) {
                 res.status(StatusCodes.OK).send({
@@ -50,7 +51,7 @@ router.get("/:id", verifyToken, async (req: Request, res: Response) => {
                     patientAddr: record.patientAddr,
                     timestamp: new Date(Number(record.timestamp) * 1000).toString(),
                     recordStatus: Number(record.recordStatus as RecordStatus),
-                    data: observation
+                    data: condition
                 })
             } else {
                 res.status(StatusCodes.BAD_REQUEST).json({
@@ -74,8 +75,9 @@ router.get("/:id", verifyToken, async (req: Request, res: Response) => {
     }
 })
 
+
 /**
- * Get patient observation record
+ * Get patient condition record
  */
 router.get("/patient/:address", verifyToken, async function (req: Request, res: Response) {
     const patientAddress = req.params['address'];
@@ -89,10 +91,10 @@ router.get("/patient/:address", verifyToken, async function (req: Request, res: 
             const records = [];
             for (let i = 0; i < recordList.length; i++) {
                 const record = await recordContract.methods.recordList(recordList[i]).call() as RecordContract.RecordStructOutput;
-                const observation = await Observation.findOne({
+                const condition = await Condition.findOne({
                     _id: record.encryptedID
                 });
-                if (observation) {
+                if (condition) {
                     records.push(
                         {
                             encryptedID: record.encryptedID,
@@ -101,7 +103,7 @@ router.get("/patient/:address", verifyToken, async function (req: Request, res: 
                             patientAddr: record.patientAddr,
                             timestamp: new Date(Number(record.timestamp) * 1000).toString(),
                             recordStatus: Number(record.recordStatus as RecordStatus),
-                            data: observation
+                            data: condition
                         }
                     )
                 };
@@ -124,9 +126,8 @@ router.get("/patient/:address", verifyToken, async function (req: Request, res: 
     }
 })
 
-
 router.post("/create", verifyToken, async (req: Request, res: Response) => {
-    const body = req.body as IObservation & AddressRequest;
+    const body = req.body as ICondition & AddressRequest;
     for (let i = 0; i < requiredAttrs.length; i++) {
         if (!body[requiredAttrs[i]]) {
             return res.status(StatusCodes.BAD_REQUEST).json({
@@ -151,12 +152,12 @@ router.post("/create", verifyToken, async (req: Request, res: Response) => {
             if (!recordExist) {
                 const doctorIsWhitelisted = patient.whitelistedDoctor.includes(doctorAddress) && patient.whitelistedDoctor.includes(senderAccount);
                 if (doctorIsWhitelisted) {
-                    const observation = await Observation.create({
+                    const condition = await Condition.create({
                         ...body,
                         _id: mongoID,
                         timestamp: new Date().toString()
                     });
-                    const queriedObservation = await Observation.findOne({
+                    const queriedObservation = await Condition.findOne({
                         _id: mongoID
                     })
                     const dataHash = btoa(JSON.stringify(queriedObservation.toJSON()));
@@ -173,7 +174,7 @@ router.post("/create", verifyToken, async (req: Request, res: Response) => {
                                     doctor: recordData.issuerDoctorAddr.toString(),
                                     timestamp: new Date(Number(recordData.timestamp) * 1000).toString(),
                                     status: Number(recordData.recordStatus),
-                                    observation: observation
+                                    condition: condition
                                 }
                             })
                         })
@@ -215,7 +216,7 @@ router.post("/edit", verifyToken, async (req: Request, res: Response) => {
     const encryptedID = req.body.encryptedID;
     const recordStatus: RecordStatus = req.body.recordStatus;
 
-    const body = req.body as IObservation & AddressRequest;
+    const body = req.body as ICondition & AddressRequest;
 
     try {
         const record = await recordContract.methods.recordList(encryptedID).call() as RecordContract.RecordStructOutput;
@@ -226,12 +227,12 @@ router.post("/edit", verifyToken, async (req: Request, res: Response) => {
 
         if (recordExist) {
             if (validSender) {
-                await Observation.updateOne({
+                await Condition.updateOne({
                     ...body,
                     _id: encryptedID,
                     timestamp: new Date().toString()
                 });
-                const queriedObservation = await Observation.findOne({
+                const queriedObservation = await Condition.findOne({
                     _id: encryptedID
                 })
                 const dataHash = btoa(JSON.stringify(queriedObservation.toJSON()));
@@ -276,7 +277,7 @@ router.post("/delete", verifyToken, async (req: Request, res: Response) => {
             if (patientExist) {
                 const recordExist = patient.recordList.includes(encryptedID);
                 if (recordExist) {
-                    await Observation.deleteOne({
+                    await Condition.deleteOne({
                         _id: encryptedID
                     }).then(async (_) => {
                         await contract.methods.removeRecord(encryptedID, patientAddress).send({ from: senderAccount, gas: "6721975" }).then(async (_) => {

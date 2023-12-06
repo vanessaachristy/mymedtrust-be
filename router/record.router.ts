@@ -9,8 +9,10 @@ import verifyToken from '../helper/token-verification';
 const router = express.Router();
 
 const observationRouter = require("./db-records/observation.router");
+const conditionRouter = require("./db-records/condition.router");
 
 router.use('/observation', observationRouter);
+router.use('/condition', conditionRouter)
 
 /**
  * Add record to patient
