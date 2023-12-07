@@ -1,6 +1,6 @@
 import { Schema, model } from 'mongoose';
 import { Timestamp } from '../types/record';
-import { Condition as ICondition } from 'fhir/r5';
+import { Condition as ICondition } from 'fhir/r4';
 
 export const requiredAttrs = ['resourceType', 'clinicalStatus', 'verificationStatus', 'category', 'severity', 'code', 'bodySite', 'subject', 'onsetDateTime'];
 
@@ -56,11 +56,15 @@ export const conditionSchema = new Schema<ICondition & Timestamp>({
     recordedDate: {
         type: String
     },
-    participant: [
-        {
-            type: Object
-        }
-    ],
+    recorder: {
+        type: Object
+    },
+    asserter: {
+        type: Object
+    },
+    evidence: [{
+        type: Object
+    }],
     stage: [{
         type: Object
     }],
