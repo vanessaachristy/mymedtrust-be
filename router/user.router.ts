@@ -8,7 +8,7 @@ import verifyToken from '../helper/token-verification';
 import { configDotenv } from 'dotenv';
 import { StatusCodes } from 'http-status-codes';
 import { contract } from '..';
-import { DoctorCreatedEventObject, PatientCreatedEventObject } from '../types/abis/MainContract';
+import { DoctorCreatedEventObject, MainContract, PatientCreatedEventObject } from '../types/abis/MainContract';
 import dotenv from 'dotenv';
 
 
@@ -18,10 +18,68 @@ router.get("/", verifyToken, async (req: UserRequest, res: Response) => {
     const user = await User.findOne({
         email: req.email
     });
-    return res.status(StatusCodes.OK).json({
-        email: user.email,
-        address: user.address,
-    })
+
+    if (user.userType === UserType.DOCTOR) {
+        let doctor = await contract.methods.getDoctorDetails(user.address).call() as MainContract.DoctorStructOutput;
+        let doctorObj = {
+            primaryInfo: {
+                address: doctor.primaryInfo.addr.toString(),
+                IC: doctor.primaryInfo.IC.toString(),
+                name: doctor.primaryInfo.name.toString(),
+                gender: doctor.primaryInfo.gender.toString(),
+                birthdate: doctor.primaryInfo.birthdate.toString(),
+                email: doctor.primaryInfo.email.toString(),
+                homeAddress: doctor.primaryInfo.homeAddress.toString(),
+                phone: doctor.primaryInfo.phone.toString(),
+                userSince: Number(doctor.primaryInfo.userSince) !== 0 ? new Date(Number(doctor.primaryInfo.userSince)).toString() : ""
+            },
+            qualification: doctor.qualification.toString(),
+            major: doctor.major.toString(),
+        }
+        return res.status(StatusCodes.OK).json({
+            email: user.email,
+            address: user.address,
+            userType: user.userType,
+            ...doctorObj
+        })
+    } else if (user.userType === UserType.PATIENT) {
+        let patient = await contract.methods.getPatientDetails(user.address).call();
+        let patientObj = {
+            primaryInfo: {
+                address: patient.primaryInfo.addr.toString(),
+                IC: patient.primaryInfo.IC.toString(),
+                name: patient.primaryInfo.name.toString(),
+                gender: patient.primaryInfo.gender.toString(),
+                birthdate: patient.primaryInfo.birthdate.toString(),
+                email: patient.primaryInfo.email.toString(),
+                homeAddress: patient.primaryInfo.homeAddress.toString(),
+                phone: patient.primaryInfo.phone.toString(),
+                userSince: Number(patient.primaryInfo.userSince) !== 0 ? new Date(Number(patient.primaryInfo.userSince)).toString() : "",
+                whitelistedDoctor: patient.whitelistedDoctor,
+                recordList: patient.recordList
+            },
+            emergencyContact: patient.emergencyContact.toString(),
+            emergencyNumber: patient.emergencyNumber.toString(),
+            bloodType: patient.bloodType.toString(),
+            height: patient.height.toString(),
+            weight: patient.weight.toString()
+        }
+        return res.status(StatusCodes.OK).json({
+            email: user.email,
+            address: user.address,
+            userType: user.userType,
+            ...patientObj
+        })
+    } else {
+        return res.status(StatusCodes.OK).json({
+            email: user.email,
+            address: user.address,
+            userType: user.userType,
+        })
+    }
+
+
+
 })
 
 router.post("/login", async (req, res) => {
