@@ -8,6 +8,8 @@ interface IUser {
     password: string;
     address: string;
     userType: UserType;
+    patientList?: string[];
+    whitelistedDoctor?: string[];
 }
 
 const userSchema = new Schema<IUser>({
@@ -36,6 +38,12 @@ const userSchema = new Schema<IUser>({
     userType: {
         type: String,
         required: true
+    },
+    patientList: {
+        type: [String],
+    },
+    whitelistedDoctor: {
+        type: [String]
     }
 });
 

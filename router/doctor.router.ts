@@ -5,6 +5,8 @@ import { AddressType } from "typechain";
 import { DoctorCreatedEventObject, WhitelistDoctorEventObject } from '../types/abis/MainContract';
 import { StatusCodes } from 'http-status-codes';
 import verifyToken from '../helper/token-verification';
+import { User } from '../schema/User.model';
+import { UserType } from '../types/user';
 
 const router = express.Router();
 
@@ -12,7 +14,6 @@ const router = express.Router();
  * Get all doctors
  */
 router.get("/", verifyToken, async function (req: Request, res: Response) {
-    res.header("Access-Control-Allow-Origin", "*");
     const totalDoctors = await contract.methods.totalDoctors().call();
     let doctors = [];
     for (let i = 1; i <= Number(totalDoctors); i++) {
@@ -51,7 +52,6 @@ router.get("/", verifyToken, async function (req: Request, res: Response) {
  * Get doctor by address
  */
 router.get("/:address", verifyToken, async function (req: Request, res: Response) {
-    res.header("Access-Control-Allow-Origin", "*");
     const address: string = req.params["address"];
     try {
         let doctor = await contract.methods.getDoctorDetails(address).call() as MainContract.DoctorStructOutput;
@@ -86,6 +86,34 @@ router.get("/:address", verifyToken, async function (req: Request, res: Response
     }
 });
 
+/**
+ * Get doctor's patient list
+ */
+router.get("/:address/patients", verifyToken, async function (req: Request, res: Response) {
+    const address: string = req.params["address"];
+    try {
+        const doctor = await User.findOne({
+            address: address,
+            userType: UserType.DOCTOR
+        });
+
+        let doctorObject = doctor.toObject();
+        delete doctorObject.whitelistedDoctor;
+
+        res.status(StatusCodes.OK).json({
+            message: 'success',
+            data: doctorObject
+        })
+
+
+
+    } catch (err) {
+        res.status(StatusCodes.BAD_REQUEST).json({
+            message: 'error',
+            error: err.toString()
+        })
+    }
+})
 
 
 /**
