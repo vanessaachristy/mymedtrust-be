@@ -10,9 +10,15 @@ const router = express.Router();
 
 const observationRouter = require("./db-records/observation.router");
 const conditionRouter = require("./db-records/condition.router");
+const allergyRouter = require("./db-records/allergy.router");
+const medicationRouter = require("./db-records/medication.router");
+
+
 
 router.use('/observation', observationRouter);
-router.use('/condition', conditionRouter)
+router.use('/condition', conditionRouter);
+router.use('/allergy', allergyRouter);
+router.use('/medication', medicationRouter);
 
 /**
  * Add record to patient

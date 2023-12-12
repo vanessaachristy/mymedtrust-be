@@ -8,6 +8,8 @@ import { StatusCodes } from "http-status-codes";
 import verifyToken from "../helper/token-verification";
 import { Observation } from "../schema/Observation.model";
 import { Condition } from "../schema/Condition.model";
+import { Allergy } from "../schema/Allergy.model";
+import { Medication } from "../schema/Medication.model";
 
 const router = express.Router();
 
@@ -292,6 +294,107 @@ router.get("/record/condition/:address", verifyToken, async function (req: Reque
         })
     }
 })
+
+/**
+ * Get patient allergy record
+ */
+router.get("/record/allergy/:address", verifyToken, async function (req: Request, res: Response) {
+    const patientAddress = req.params['address'];
+
+    try {
+        const patient = await contract.methods.getPatientDetails(patientAddress).call() as MainContract.PatientStructOutput;
+        const patientExist = patient.primaryInfo.addr !== '0x0000000000000000000000000000000000000000';
+
+        if (patientExist) {
+            const recordList = patient.recordList;
+            const records = [];
+            for (let i = 0; i < recordList.length; i++) {
+                const record = await recordContract.methods.recordList(recordList[i]).call() as RecordContract.RecordStructOutput;
+                const allergy = await Allergy.findOne({
+                    _id: record.encryptedID
+                });
+                if (allergy) {
+                    records.push(
+                        {
+                            encryptedID: record.encryptedID,
+                            dataHash: record.dataHash,
+                            issuerDoctorAddr: record.issuerDoctorAddr,
+                            patientAddr: record.patientAddr,
+                            timestamp: new Date(Number(record.timestamp) * 1000).toString(),
+                            recordStatus: Number(record.recordStatus as RecordStatus),
+                            data: allergy
+                        }
+                    )
+                };
+            }
+            res.status(StatusCodes.OK).send({
+                message: "success",
+                data: records
+            })
+        } else {
+            res.status(StatusCodes.BAD_REQUEST).json({
+                message: "error",
+                error: "Patient does not exist"
+            })
+        }
+    } catch (err) {
+        res.status(StatusCodes.BAD_REQUEST).json({
+            message: "error",
+            error: err.toString()
+        })
+    }
+})
+
+/**
+ * Get patient medication record
+ */
+router.get("/record/medication/:address", verifyToken, async function (req: Request, res: Response) {
+    const patientAddress = req.params['address'];
+
+    try {
+        const patient = await contract.methods.getPatientDetails(patientAddress).call() as MainContract.PatientStructOutput;
+        const patientExist = patient.primaryInfo.addr !== '0x0000000000000000000000000000000000000000';
+
+        if (patientExist) {
+            const recordList = patient.recordList;
+            const records = [];
+            for (let i = 0; i < recordList.length; i++) {
+                const record = await recordContract.methods.recordList(recordList[i]).call() as RecordContract.RecordStructOutput;
+                const medication = await Medication.findOne({
+                    _id: record.encryptedID
+                });
+                if (medication) {
+                    records.push(
+                        {
+                            encryptedID: record.encryptedID,
+                            dataHash: record.dataHash,
+                            issuerDoctorAddr: record.issuerDoctorAddr,
+                            patientAddr: record.patientAddr,
+                            timestamp: new Date(Number(record.timestamp) * 1000).toString(),
+                            recordStatus: Number(record.recordStatus as RecordStatus),
+                            data: medication
+                        }
+                    )
+                };
+            }
+            res.status(StatusCodes.OK).send({
+                message: "success",
+                data: records
+            })
+        } else {
+            res.status(StatusCodes.BAD_REQUEST).json({
+                message: "error",
+                error: "Patient does not exist"
+            })
+        }
+    } catch (err) {
+        res.status(StatusCodes.BAD_REQUEST).json({
+            message: "error",
+            error: err.toString()
+        })
+    }
+})
+
 
 
 module.exports = router;
