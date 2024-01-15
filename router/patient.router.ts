@@ -56,6 +56,52 @@ router.get("/", verifyToken, async function (req: Request, res: Response) {
 });
 
 /**
+ * Get patients by doctor
+ */
+router.get("/doctor/:address", verifyToken, async function (req: Request, res: Response) {
+    const doctorAddress: string = req.params["address"];
+    const totalPatients = Number(await contract.methods.totalPatients().call());
+    let patientsCount = 0;
+    let patients = [];
+    for (let i = 1; i <= Number(totalPatients); i++) {
+        let patientAddr = (await contract.methods.patients(i).call()) as AddressType;
+        let patient = (await contract.methods.getPatientDetails(patientAddr).call()) as MainContract.PatientStructOutput;
+        if (patientAddr.toString() !== '0x0000000000000000000000000000000000000000' && patient.whitelistedDoctor.includes(doctorAddress)) {
+            patientsCount++;
+            let patientObj = {
+                primaryInfo: {
+                    address: patient.primaryInfo.addr.toString(),
+                    IC: patient.primaryInfo.IC.toString(),
+                    name: patient.primaryInfo.name.toString(),
+                    gender: patient.primaryInfo.gender.toString(),
+                    birthdate: patient.primaryInfo.birthdate.toString(),
+                    email: patient.primaryInfo.email.toString(),
+                    homeAddress: patient.primaryInfo.homeAddress.toString(),
+                    phone: patient.primaryInfo.phone.toString(),
+                    userSince: Number(patient.primaryInfo.userSince) !== 0 ? new Date(Number(patient.primaryInfo.userSince)).toString() : "",
+                },
+                emergencyContact: patient.emergencyContact.toString(),
+                emergencyNumber: patient.emergencyNumber.toString(),
+                bloodType: patient.bloodType.toString(),
+                height: patient.height.toString(),
+                weight: patient.weight.toString(),
+                whitelistedDoctor: patient.whitelistedDoctor,
+                recordList: patient.recordList
+            }
+            patients.push(patientObj);
+        }
+    }
+
+    res.json({
+        data: {
+            total: Number(patientsCount),
+            patients: patients
+        }
+    })
+});
+
+
+/**
  * Get patients by address
  */
 router.get("/:address", verifyToken, async function (req: Request, res: Response) {
@@ -89,7 +135,7 @@ router.get("/:address", verifyToken, async function (req: Request, res: Response
         console.trace(err);
         let errMessage = "Invalid request";
         if (err.errors[0].message.toString().includes('must pass "address" validation')) {
-            errMessage = "Address invalid!"
+            errMessage = "Patient address not exist!"
         }
         res.status(StatusCodes.BAD_REQUEST).json({
             message: "error",
@@ -156,10 +202,12 @@ router.get("/record/:address", verifyToken, async function (req: Request, res: R
             const records = [];
             for (let i = 0; i < recordList.length; i++) {
                 const record = await recordContract.methods.recordList(recordList[i]).call() as RecordContract.RecordStructOutput;
+                let doctor = await contract.methods.getDoctorDetails(record.issuerDoctorAddr).call() as MainContract.DoctorStructOutput;
                 let recordObject = {
                     encryptedID: record.encryptedID,
                     dataHash: record.dataHash,
                     issuerDoctorAddr: record.issuerDoctorAddr,
+                    issuerDoctorName: doctor.primaryInfo.name.toString(),
                     patientAddr: record.patientAddr,
                     timestamp: new Date(Number(record.timestamp) * 1000).toString(),
                     recordStatus: Number(record.recordStatus as RecordStatus),
@@ -167,13 +215,26 @@ router.get("/record/:address", verifyToken, async function (req: Request, res: R
                 const observation = await Observation.findOne({
                     _id: record.encryptedID
                 });
-                if (!observation) {
-                    const condition = await Condition.findOne({
-                        _id: record.encryptedID
-                    });
-                    recordObject['data'] = condition;
-                } else {
+                const condition = await Condition.findOne({
+                    _id: record.encryptedID
+                });
+                const medication = await Medication.findOne({
+                    _id: record.encryptedID
+                });
+                const allergy = await Allergy.findOne({
+                    _id: record.encryptedID
+                });
+                if (observation) {
                     recordObject['data'] = observation;
+                }
+                if (condition) {
+                    recordObject['data'] = condition;
+                }
+                if (medication) {
+                    recordObject['data'] = medication;
+                }
+                if (allergy) {
+                    recordObject['data'] = allergy;
                 }
                 records.push(recordObject);
             }
