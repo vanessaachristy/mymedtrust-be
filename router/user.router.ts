@@ -70,11 +70,27 @@ router.get("/", verifyToken, async (req: UserRequest, res: Response) => {
             userType: user.userType,
             ...patientObj
         })
-    } else {
+    }
+    else {
+        let patientObj = {
+            primaryInfo: {
+                address: user.address,
+                IC: user.IC,
+                name: user.name,
+                gender: user.gender,
+                birthdate: user.birthdate,
+                email: user.email,
+                homeAddress: user.homeAddress,
+                phone: user.phone,
+                userSince: user.userSince
+            }
+        }
         return res.status(StatusCodes.OK).json({
             email: user.email,
             address: user.address,
             userType: user.userType,
+            ...patientObj
+
         })
     }
 
@@ -117,7 +133,7 @@ router.post("/login", async (req, res) => {
                 email: user.email,
                 address: user.address
             }, configDotenv()?.parsed?.JWT_SECRET);
-            return res.cookie("Authorization", `Bearer ${token}`, { maxAge: 1800000, sameSite: "none", secure: true }).status(StatusCodes.OK).json({
+            return res.cookie("Authorization", `Bearer ${token}`, { maxAge: 432000000, sameSite: "none", secure: true }).status(StatusCodes.OK).json({
                 message: "Successful login!",
                 data: {
                     email: user.email,
@@ -270,7 +286,13 @@ router.post("/signup", async (req: Request, res: Response) => {
                 email,
                 password: hashedPassword,
                 address,
-                userType
+                userType,
+                birthdate,
+                IC: ic,
+                gender,
+                homeAddress,
+                phone,
+                userSince: unixTS
             });
 
             try {
@@ -321,7 +343,14 @@ router.post("/signup", async (req: Request, res: Response) => {
                 email,
                 password: hashedPassword,
                 address,
-                userType
+                userType,
+                birthdate,
+                IC: ic,
+                gender,
+                homeAddress,
+                phone,
+                userSince: unixTS
+
             });
 
             try {
@@ -359,7 +388,13 @@ router.post("/signup", async (req: Request, res: Response) => {
                     email,
                     password: hashedPassword,
                     address,
-                    userType
+                    userType,
+                    birthdate,
+                    IC: ic,
+                    gender,
+                    homeAddress,
+                    phone,
+                    userSince: unixTS
                 }).then(async () => {
                     const createdUser = await User.findOne({ email });
 
@@ -396,15 +431,7 @@ router.post("/signup", async (req: Request, res: Response) => {
     }
 })
 
-router.get("/", verifyToken, async (req: UserRequest, res: Response) => {
-    const user = await User.findOne({
-        email: req.email
-    });
-    return res.status(StatusCodes.OK).json({
-        email: user.email,
-        address: user.address,
-    })
-})
+
 
 router.get("/user", verifyToken, async (req: Request, res: Response) => {
     try {
