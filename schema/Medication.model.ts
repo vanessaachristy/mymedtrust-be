@@ -2,7 +2,7 @@ import { Schema, model } from 'mongoose';
 import { Timestamp } from '../types/record';
 import { Medication as IMedication } from 'fhir/r4'
 
-export const requiredAttrs = ['resourceType', 'code', 'contained', 'form', 'ingredient'];
+export const requiredAttrs = ['resourceType', 'code'];
 
 export const medicationSchema = new Schema<IMedication & Timestamp>({
     resourceType: {
@@ -24,19 +24,16 @@ export const medicationSchema = new Schema<IMedication & Timestamp>({
     },
     contained: [{
         type: Object,
-        required: true
     }],
     manufacturer: {
-        type: String,
+        type: Object,
     },
     form: {
         type: Object,
-        required: true
 
     },
     ingredient: [{
         type: Object,
-        required: true
 
     }],
     batch: {
