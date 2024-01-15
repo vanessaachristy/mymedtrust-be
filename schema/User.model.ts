@@ -10,6 +10,12 @@ interface IUser {
     userType: UserType;
     patientList?: string[];
     whitelistedDoctor?: string[];
+    birthdate?: string;
+    IC?: string;
+    gender?: string;
+    homeAddress?: string;
+    phone?: string;
+    userSince?: string
 }
 
 const userSchema = new Schema<IUser>({
@@ -44,7 +50,26 @@ const userSchema = new Schema<IUser>({
     },
     whitelistedDoctor: {
         type: [String]
-    }
+    },
+    birthdate: {
+        type: String
+    },
+    IC: {
+        type: String
+    },
+    homeAddress: {
+        type: String
+    },
+    gender: {
+        type: String
+    },
+    phone: {
+        type: String
+    },
+    userSince: {
+        type: String
+    },
+
 });
 
 export const User = model<IUser>("User", userSchema)
