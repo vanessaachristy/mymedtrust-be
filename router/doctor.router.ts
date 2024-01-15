@@ -90,29 +90,45 @@ router.get("/:address", verifyToken, async function (req: Request, res: Response
  * Get doctor's patient list
  */
 router.get("/:address/patients", verifyToken, async function (req: Request, res: Response) {
-    const address: string = req.params["address"];
-    try {
-        const doctor = await User.findOne({
-            address: address,
-            userType: UserType.DOCTOR
-        });
-
-        let doctorObject = doctor.toObject();
-        delete doctorObject.whitelistedDoctor;
-
-        res.status(StatusCodes.OK).json({
-            message: 'success',
-            data: doctorObject
-        })
-
-
-
-    } catch (err) {
-        res.status(StatusCodes.BAD_REQUEST).json({
-            message: 'error',
-            error: err.toString()
-        })
+    const doctorAddress: string = req.params["address"];
+    const totalPatients = Number(await contract.methods.totalPatients().call());
+    let patientsCount = 0;
+    let patients = [];
+    for (let i = 1; i <= Number(totalPatients); i++) {
+        let patientAddr = (await contract.methods.patients(i).call()) as AddressType;
+        let patient = (await contract.methods.getPatientDetails(patientAddr).call()) as MainContract.PatientStructOutput;
+        if (patientAddr.toString() !== '0x0000000000000000000000000000000000000000' && patient.whitelistedDoctor.includes(doctorAddress)) {
+            patientsCount++;
+            let patientObj = {
+                primaryInfo: {
+                    address: patient.primaryInfo.addr.toString(),
+                    IC: patient.primaryInfo.IC.toString(),
+                    name: patient.primaryInfo.name.toString(),
+                    gender: patient.primaryInfo.gender.toString(),
+                    birthdate: patient.primaryInfo.birthdate.toString(),
+                    email: patient.primaryInfo.email.toString(),
+                    homeAddress: patient.primaryInfo.homeAddress.toString(),
+                    phone: patient.primaryInfo.phone.toString(),
+                    userSince: Number(patient.primaryInfo.userSince) !== 0 ? new Date(Number(patient.primaryInfo.userSince)).toString() : "",
+                },
+                emergencyContact: patient.emergencyContact.toString(),
+                emergencyNumber: patient.emergencyNumber.toString(),
+                bloodType: patient.bloodType.toString(),
+                height: patient.height.toString(),
+                weight: patient.weight.toString(),
+                whitelistedDoctor: patient.whitelistedDoctor,
+                recordList: patient.recordList
+            }
+            patients.push(patientObj);
+        }
     }
+
+    res.json({
+        data: {
+            total: Number(patientsCount),
+            patients: patients
+        }
+    })
 })
 
 
