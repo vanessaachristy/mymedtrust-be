@@ -130,6 +130,7 @@ router.post("/create", verifyToken, async (req: Request, res: Response) => {
         account: string;
         doctorAddr: string;
         patientAddr: string; // change to patientAddr bcs the allergy FHIR R4 data types also has 'patient' attribute
+        additionalNote?: string;
     };
     for (let i = 0; i < requiredAttrs.length; i++) {
         if (!body[requiredAttrs[i]]) {
@@ -184,20 +185,20 @@ router.post("/create", verifyToken, async (req: Request, res: Response) => {
 
                     })
                 } else {
-                    res.status(StatusCodes.OK).send({
-                        message: 'success',
+                    res.status(StatusCodes.BAD_REQUEST).send({
+                        message: 'error',
                         error: "Doctor is not whitelisted"
                     })
                 }
             } else {
-                res.status(StatusCodes.OK).send({
-                    message: 'success',
+                res.status(StatusCodes.BAD_REQUEST).send({
+                    message: 'error',
                     error: "Record with same ID already exist"
                 })
             }
         } else {
-            res.status(StatusCodes.OK).send({
-                message: 'success',
+            res.status(StatusCodes.BAD_REQUEST).send({
+                message: 'error',
                 error: "Patient is not exist"
             })
         };
@@ -252,7 +253,7 @@ router.post("/edit", verifyToken, async (req: Request, res: Response) => {
             } else {
                 res.status(StatusCodes.BAD_REQUEST).json({
                     message: "error",
-                    error: "Sender must be the issuer doctor!"
+                    error: "Invalid sender!"
                 })
             }
         } else {

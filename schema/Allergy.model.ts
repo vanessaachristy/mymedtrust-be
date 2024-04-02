@@ -1,10 +1,10 @@
 import { Schema, model } from 'mongoose';
-import { Timestamp } from '../types/record';
+import { ExtraRecordProps } from '../types/record';
 import { AllergyIntolerance as IAllergy } from 'fhir/r4';
 
 export const requiredAttrs = ['resourceType', 'clinicalStatus', 'verificationStatus', 'category', 'criticality', 'code', 'patient', 'recorder', 'recordedDate'];
 
-export const allergySchema = new Schema<IAllergy & Timestamp>({
+export const allergySchema = new Schema<IAllergy & ExtraRecordProps>({
     resourceType: {
         type: String,
         required: true
@@ -86,6 +86,9 @@ export const allergySchema = new Schema<IAllergy & Timestamp>({
     timestamp: {
         type: String,
         required: true
+    },
+    additionalNote: {
+        type: String
     }
 
 })

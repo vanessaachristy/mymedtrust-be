@@ -37,7 +37,9 @@ app.listen(port, () => {
         .then((db) => {
             console.log("connected to database!");
         })
-        .catch((err) => console.log(err.response));
+        .catch((err) =>
+            console.log(err, mongoUrl
+            ));
 
 
 });

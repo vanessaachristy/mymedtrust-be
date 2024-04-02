@@ -216,7 +216,10 @@ router.post("/edit", verifyToken, async (req: Request, res: Response) => {
     const encryptedID = req.body.encryptedID;
     const recordStatus: RecordStatus = req.body.recordStatus;
 
-    const body = req.body as IMedication & AddressRequest;
+    const body = req.body as IMedication & AddressRequest & {
+        additionalNote?: string;
+
+    };
 
     try {
         const record = await recordContract.methods.recordList(encryptedID).call() as RecordContract.RecordStructOutput;
@@ -245,7 +248,7 @@ router.post("/edit", verifyToken, async (req: Request, res: Response) => {
             } else {
                 res.status(StatusCodes.BAD_REQUEST).json({
                     message: "error",
-                    error: "Sender must be the issuer doctor!"
+                    error: "Invalid sender!"
                 })
             }
         } else {

@@ -1,10 +1,10 @@
 import { Schema, model } from 'mongoose';
-import { Timestamp } from '../types/record';
+import { ExtraRecordProps } from '../types/record';
 import { Condition as ICondition } from 'fhir/r4';
 
 export const requiredAttrs = ['resourceType', 'clinicalStatus', 'verificationStatus', 'category', 'severity', 'code', 'bodySite', 'subject', 'onsetDateTime'];
 
-export const conditionSchema = new Schema<ICondition & Timestamp>({
+export const conditionSchema = new Schema<ICondition & ExtraRecordProps>({
     resourceType: {
         type: String,
         required: true
@@ -76,6 +76,9 @@ export const conditionSchema = new Schema<ICondition & Timestamp>({
     timestamp: {
         type: String,
         required: true
+    },
+    additionalNote: {
+        type: String
     }
 
 })

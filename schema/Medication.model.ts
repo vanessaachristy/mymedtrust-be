@@ -1,10 +1,10 @@
 import { Schema, model } from 'mongoose';
-import { Timestamp } from '../types/record';
+import { ExtraRecordProps } from '../types/record';
 import { Medication as IMedication } from 'fhir/r4'
 
 export const requiredAttrs = ['resourceType', 'code'];
 
-export const medicationSchema = new Schema<IMedication & Timestamp>({
+export const medicationSchema = new Schema<IMedication & ExtraRecordProps>({
     resourceType: {
         type: String,
         required: true
@@ -42,6 +42,9 @@ export const medicationSchema = new Schema<IMedication & Timestamp>({
     timestamp: {
         type: String,
         required: true
+    },
+    additionalNote: {
+        type: String
     }
 
 })

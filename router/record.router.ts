@@ -90,6 +90,7 @@ router.get("/", verifyToken, async function (req: Request, res: Response) {
                         issuerDoctorAddr: record.issuerDoctorAddr,
                         issuerDoctorName: doctor.primaryInfo.name.toString(),
                         patientAddr: record.patientAddr,
+                        patientName: patient.primaryInfo.name.toString(),
                         timestamp: new Date(Number(record.timestamp) * 1000).toString(),
                         recordStatus: Number(record.recordStatus as RecordStatus),
                     }
@@ -119,10 +120,6 @@ router.get("/", verifyToken, async function (req: Request, res: Response) {
                     }
                     records.push(recordObject);
                 }
-                res.status(StatusCodes.OK).send({
-                    message: "success",
-                    data: records
-                })
             } else {
                 res.status(StatusCodes.BAD_REQUEST).json({
                     message: "error",
@@ -238,7 +235,7 @@ router.post("/edit", verifyToken, async function (req: Request, res: Response) {
             } else {
                 res.status(StatusCodes.BAD_REQUEST).json({
                     message: "error",
-                    error: "Sender must be the issuer doctor!"
+                    error: "Sender must be the issuer doctor or the record owner!"
                 })
             }
         } else {

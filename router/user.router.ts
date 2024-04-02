@@ -306,7 +306,7 @@ router.post("/signup", async (req: Request, res: Response) => {
                     const event = await contract.getPastEvents("PatientCreated", { fromBlock: 0, toBlock: "latest" });
                     const patientData = event[event.length - 1].returnValues as PatientCreatedEventObject;
                     res.cookie("Authorization", `Bearer ${token}`, {
-                        maxAge: 1800000
+                        maxAge: 432000000
                     }).status(StatusCodes.OK).json({
                         message: "User has been successfully created.",
                         data: {

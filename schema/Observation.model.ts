@@ -1,6 +1,6 @@
 import { Schema, model } from 'mongoose';
 import { Observation as IObservation } from 'fhir/r5';
-import { Timestamp } from '../types/record';
+import { ExtraRecordProps } from '../types/record';
 
 export const requiredAttrs = ['resourceType', 'effectiveDateTime'];
 export const mockObservation: IObservation = {
@@ -155,7 +155,7 @@ export const mockObservation: IObservation = {
     ]
 };
 
-export const observationSchema = new Schema<IObservation & Timestamp>({
+export const observationSchema = new Schema<IObservation & ExtraRecordProps>({
     resourceType: {
         type: String,
         required: true
@@ -335,6 +335,9 @@ export const observationSchema = new Schema<IObservation & Timestamp>({
     timestamp: {
         type: String,
         required: true
+    },
+    additionalNote: {
+        type: String
     }
 
 })

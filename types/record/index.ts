@@ -5,6 +5,7 @@ export const enum RecordStatus {
     DECLINED
 }
 
-export type Timestamp = {
-    timestamp: string
+export type ExtraRecordProps = {
+    timestamp: string,
+    additionalNote: string
 }

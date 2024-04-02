@@ -180,20 +180,20 @@ router.post("/create", verifyToken, async (req: Request, res: Response) => {
 
                     })
                 } else {
-                    res.status(StatusCodes.OK).send({
-                        message: 'success',
+                    res.status(StatusCodes.BAD_REQUEST).send({
+                        message: 'error',
                         error: "Doctor is not whitelisted"
                     })
                 }
             } else {
-                res.status(StatusCodes.OK).send({
-                    message: 'success',
+                res.status(StatusCodes.BAD_REQUEST).send({
+                    message: 'error',
                     error: "Record with same ID already exist"
                 })
             }
         } else {
-            res.status(StatusCodes.OK).send({
-                message: 'success',
+            res.status(StatusCodes.BAD_REQUEST).send({
+                message: 'error',
                 error: "Patient is not exist"
             })
         };
@@ -215,7 +215,9 @@ router.post("/edit", verifyToken, async (req: Request, res: Response) => {
     const encryptedID = req.body.encryptedID;
     const recordStatus: RecordStatus = req.body.recordStatus;
 
-    const body = req.body as IObservation & AddressRequest;
+    const body = req.body as IObservation & AddressRequest & {
+        additionalNote?: string;
+    };
 
     try {
         const record = await recordContract.methods.recordList(encryptedID).call() as RecordContract.RecordStructOutput;
@@ -244,7 +246,7 @@ router.post("/edit", verifyToken, async (req: Request, res: Response) => {
             } else {
                 res.status(StatusCodes.BAD_REQUEST).json({
                     message: "error",
-                    error: "Sender must be the issuer doctor!"
+                    error: "Invalid sender!"
                 })
             }
         } else {

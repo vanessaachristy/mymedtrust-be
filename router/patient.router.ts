@@ -10,6 +10,7 @@ import { Observation } from "../schema/Observation.model";
 import { Condition } from "../schema/Condition.model";
 import { Allergy } from "../schema/Allergy.model";
 import { Medication } from "../schema/Medication.model";
+import { EMPTY_ADDRESS } from "../common/const";
 
 const router = express.Router();
 
@@ -108,29 +109,38 @@ router.get("/:address", verifyToken, async function (req: Request, res: Response
     const address: string = req.params["address"];
     try {
         let patient = await contract.methods.getPatientDetails(address).call();
-        let patientObj = {
-            primaryInfo: {
-                address: patient.primaryInfo.addr.toString(),
-                IC: patient.primaryInfo.IC.toString(),
-                name: patient.primaryInfo.name.toString(),
-                gender: patient.primaryInfo.gender.toString(),
-                birthdate: patient.primaryInfo.birthdate.toString(),
-                email: patient.primaryInfo.email.toString(),
-                homeAddress: patient.primaryInfo.homeAddress.toString(),
-                phone: patient.primaryInfo.phone.toString(),
-                userSince: Number(patient.primaryInfo.userSince) !== 0 ? new Date(Number(patient.primaryInfo.userSince)).toString() : "",
-                whitelistedDoctor: patient.whitelistedDoctor,
-                recordList: patient.recordList
-            },
-            emergencyContact: patient.emergencyContact.toString(),
-            emergencyNumber: patient.emergencyNumber.toString(),
-            bloodType: patient.bloodType.toString(),
-            height: patient.height.toString(),
-            weight: patient.weight.toString()
+
+        if (patient.primaryInfo.addr.toString() === EMPTY_ADDRESS) {
+            res.status(StatusCodes.BAD_REQUEST).json({
+                message: 'error',
+                error: "Patient address not exist!"
+            })
+        } else {
+            let patientObj = {
+                primaryInfo: {
+                    address: patient.primaryInfo.addr.toString(),
+                    IC: patient.primaryInfo.IC.toString(),
+                    name: patient.primaryInfo.name.toString(),
+                    gender: patient.primaryInfo.gender.toString(),
+                    birthdate: patient.primaryInfo.birthdate.toString(),
+                    email: patient.primaryInfo.email.toString(),
+                    homeAddress: patient.primaryInfo.homeAddress.toString(),
+                    phone: patient.primaryInfo.phone.toString(),
+                    userSince: Number(patient.primaryInfo.userSince) !== 0 ? new Date(Number(patient.primaryInfo.userSince)).toString() : "",
+                    whitelistedDoctor: patient.whitelistedDoctor,
+                    recordList: patient.recordList
+                },
+                emergencyContact: patient.emergencyContact.toString(),
+                emergencyNumber: patient.emergencyNumber.toString(),
+                bloodType: patient.bloodType.toString(),
+                height: patient.height.toString(),
+                weight: patient.weight.toString()
+            }
+            res.json({
+                data: patientObj
+            })
         }
-        res.json({
-            data: patientObj
-        })
+
     } catch (err) {
         console.trace(err);
         let errMessage = "Invalid request";
@@ -212,30 +222,24 @@ router.get("/record/:address", verifyToken, async function (req: Request, res: R
                     timestamp: new Date(Number(record.timestamp) * 1000).toString(),
                     recordStatus: Number(record.recordStatus as RecordStatus),
                 }
-                const observation = await Observation.findOne({
-                    _id: record.encryptedID
-                });
-                const condition = await Condition.findOne({
-                    _id: record.encryptedID
-                });
-                const medication = await Medication.findOne({
-                    _id: record.encryptedID
-                });
-                const allergy = await Allergy.findOne({
-                    _id: record.encryptedID
-                });
-                if (observation) {
-                    recordObject['data'] = observation;
-                }
-                if (condition) {
-                    recordObject['data'] = condition;
-                }
-                if (medication) {
-                    recordObject['data'] = medication;
-                }
-                if (allergy) {
-                    recordObject['data'] = allergy;
-                }
+
+                const promises = [
+                    Observation.findOne({
+                        _id: record.encryptedID
+                    }),
+                    Condition.findOne({
+                        _id: record.encryptedID
+                    }), Medication.findOne({
+                        _id: record.encryptedID
+                    }),
+
+                    Allergy.findOne({
+                        _id: record.encryptedID
+                    }),]
+
+                const promiseData = await Promise.all(promises);
+                recordObject['data'] = promiseData.filter(data => data !== null)[0];
+
                 records.push(recordObject);
             }
             res.status(StatusCodes.OK).send({

@@ -127,7 +127,9 @@ router.get("/patient/:address", verifyToken, async function (req: Request, res: 
 })
 
 router.post("/create", verifyToken, async (req: Request, res: Response) => {
-    const body = req.body as ICondition & AddressRequest;
+    const body = req.body as ICondition & AddressRequest & {
+        additionalNote?: string;
+    };
     for (let i = 0; i < requiredAttrs.length; i++) {
         if (!body[requiredAttrs[i]]) {
             return res.status(StatusCodes.BAD_REQUEST).json({
@@ -245,7 +247,7 @@ router.post("/edit", verifyToken, async (req: Request, res: Response) => {
             } else {
                 res.status(StatusCodes.BAD_REQUEST).json({
                     message: "error",
-                    error: "Sender must be the issuer doctor!"
+                    error: "Invalid sedner!"
                 })
             }
         } else {
