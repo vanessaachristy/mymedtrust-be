@@ -47,7 +47,59 @@ For more information and detailed documentation, refer to the [MongoDB Atlas Doc
 
    Replace JWT_SECRET with 32 alphanumeric characters for encoding JWT tokens in the authentication process.
 
-# Express.js Backend Docker Setup
+# Running the Project: Option 1: Using Node
+
+This guide explains how to set up and run the Express.js project using Node.js in the terminal.
+
+## Prerequisites
+
+Before running the project, ensure you have the following prerequisites installed:
+
+- **Node.js**: Ensure you have a recent version of Node.js installed. You can check your version with the following command:
+
+    ```bash
+    node --version
+    ```
+
+- **npm**: Node.js comes with npm (Node Package Manager) by default. You can check your npm version with the following command:
+
+    ```bash
+    npm --version
+    ```
+
+## Getting Started
+
+To run the application locally, follow these steps:
+
+1. Clone this repository to your local machine:
+
+```bash
+git clone https://github.com/vanessaachristy/mymedtrust-be.git
+```
+
+2. Navigate to the project directory:
+
+```bash
+cd mymedtrust-be
+```
+
+3. Ensure the `.env` file in the root directory is created and filled in properly
+
+4. Installation:
+
+To install the necessary dependencies for the project, run the following command in the project directory:
+
+```bash
+npm install
+```
+
+5. Start the project:
+
+```bash
+npm run dev
+```
+
+# Running the Project: Option 2: Using Docker
 
 This repository contains the source code for a backend application built with Express.js. The application is containerized using Docker for easy setup and deployment.
 
